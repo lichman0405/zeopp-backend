@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   zeopp-api:
     container_name: zeopp-api
