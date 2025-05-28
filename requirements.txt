@@ -1,0 +1,7 @@
+fastapi>=0.95.0
+uvicorn[standard]>=0.23.0
+python-multipart>=0.0.6
+sh>=1.14.3
+rich>=13.3.5
+python-dotenv>=1.0.0
+pydantic

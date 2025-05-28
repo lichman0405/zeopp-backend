@@ -1,0 +1,19 @@
+version: "3.9"  # 最佳兼容性版本，支持所有主流 Docker Engine
+
+services:
+  zeopp-api:
+    container_name: zeopp-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9876:8000"
+    environment:
+      - ZEO_EXEC_PATH=/usr/local/bin/network
+      - ENABLE_CACHE=true
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ./workspace:/app/workspace  # 保证缓存和临时结构可见
+      - ./app:/app/app              # 热更新接口代码（可选）
+      - ./.env:/app/.env            # 加载 FastAPI 环境配置
+    restart: unless-stopped
