@@ -1,4 +1,4 @@
-version: "3.9"  # 最佳兼容性版本，支持所有主流 Docker Engine
+version: "3.9"
 
 services:
   zeopp-api:
@@ -7,13 +7,30 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "9876:8000"
+      - "9876:8000" # Backend accessible on host port 9876
     environment:
       - ZEO_EXEC_PATH=/usr/local/bin/network
       - ENABLE_CACHE=true
       - LOG_LEVEL=DEBUG
     volumes:
-      - ./workspace:/app/workspace  # 保证缓存和临时结构可见
-      - ./app:/app/app              # 热更新接口代码（可选）
-      - ./.env:/app/.env            # 加载 FastAPI 环境配置
+      - ./workspace:/app/workspace
+      - ./app:/app/app
+      - ./.env:/app/.env
     restart: unless-stopped
+
+  frontend:
+    container_name: vue-frontend
+    build:
+      context: ./frontend # Context is the 'frontend' directory
+      dockerfile: Dockerfile # Specifies Dockerfile within that context
+    ports:
+      - "8080:80" # Frontend accessible on host port 8080
+    depends_on:
+      - zeopp-api
+    restart: unless-stopped
+    # No volumes needed for production serving of static files,
+    # but you might add one for nginx logs if desired:
+    # volumes:
+    #   - ./nginx_logs:/var/log/nginx
+
+# Docker Compose will create a default network that both services join
