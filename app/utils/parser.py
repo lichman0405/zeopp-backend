@@ -211,43 +211,6 @@ def parse_block_from_text(text: str) -> dict:
 
     return result
 
-def parse_strinfo_from_text(text: str) -> dict:
-    """
-    Parses the content of a .strinfo file.
-    Example format:
-    Number of frameworks: 1
-    Framework 1 dimensionality: 3
-    """
-    frameworks = []
-    lines = text.strip().splitlines()
-    if not lines:
-        raise ValueError("Empty .strinfo file content.")
-
-    try:
-        num_frameworks_line = lines[0]
-        num_frameworks = int(num_frameworks_line.split(":")[1].strip())
-
-
-        for line in lines[1:]:
-            if "dimensionality" in line:
-                parts = line.split()
-                framework_id = int(parts[1])
-                dimensionality = int(parts[3])
-                frameworks.append({
-                    "framework_id": framework_id,
-                    "dimensionality": dimensionality
-                })
-
-        if len(frameworks) != num_frameworks:
-            raise ValueError("Mismatch between reported number of frameworks and parsed framework details.")
-
-        return {
-            "number_of_frameworks": num_frameworks,
-            "frameworks": frameworks
-        }
-    except (IndexError, ValueError) as e:
-        raise ValueError(f"Failed to parse .strinfo file content: '{text}'. Error: {e}")
-
 def parse_oms_from_text(text: str) -> dict:
     """
     Parses the content of a .oms file to find the count of open metal sites.
