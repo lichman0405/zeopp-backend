@@ -214,36 +214,23 @@ def parse_block_from_text(text: str) -> dict:
 def parse_psd_from_text(text: str) -> dict:
     """
     Parses the content of a .psd_histo file into a list of histogram data points.
-    Each line is expected to contain four float values:
-    1. Radius
-    2. Pore Volume (dV)
-    3. Cumulative Pore Volume (V)
-    4. Derivative Pore Volume (dV/d(log(r)))
-
-    Args:
-        text (str): The string content of the .psd_histo file.
-
-    Returns:
-        A dictionary containing the list of parsed histogram data, suitable for the response model.
-    
-    Raises:
-        ValueError: If the file content is empty or cannot be parsed correctly.
+    This version is more robust and skips header lines that do not start with numbers.
     """
     histogram_data = []
     lines = text.strip().splitlines()
 
-    # Iterate over each line in the file content
     for line in lines:
-        # Skip comments or empty lines
-        if line.strip().startswith('#') or not line.strip():
+        line = line.strip()
+        if line.startswith('#') or not line:
+            continue
+        
+        parts = line.split()
+        if len(parts) < 4:
             continue
         
         try:
-            parts = line.split()
-            # Ensure the line has at least the 4 required columns
-            if len(parts) < 4:
-                continue
-            
+            float(parts[0])
+
             data_point = {
                 "radius": float(parts[0]),
                 "pore_volume": float(parts[1]),
@@ -251,13 +238,11 @@ def parse_psd_from_text(text: str) -> dict:
                 "derivative_pore_volume": float(parts[3]),
             }
             histogram_data.append(data_point)
-        except (ValueError, IndexError) as e:
-            # If any line is malformed, raise an error to be caught by the API handler
-            raise ValueError(f"Failed to parse line in .psd_histo file: '{line}'. Error: {e}")
+        except (ValueError, IndexError):
+            continue
     
-    # If after processing all lines, no data was extracted, the output is considered invalid.
     if not histogram_data:
-        raise ValueError("No valid data points found in the .psd_histo output.")
+        raise ValueError("No valid numerical data points found in the .psd_histo output.")
 
     return {"psd_histogram_data": histogram_data}
 
@@ -275,11 +260,10 @@ def parse_strinfo_from_text(text: str) -> dict:
         raise ValueError("Empty .strinfo file content.")
 
     try:
-        # First line contains the number of frameworks
         num_frameworks_line = lines[0]
         num_frameworks = int(num_frameworks_line.split(":")[1].strip())
 
-        # Subsequent lines contain info for each framework
+
         for line in lines[1:]:
             if "dimensionality" in line:
                 parts = line.split()
@@ -309,11 +293,9 @@ def parse_oms_from_text(text: str) -> dict:
     for line in lines:
         if "Number of open metal sites" in line:
             try:
-                # Assumes format "Number of open metal sites: 5"
                 count = int(line.split(":")[1].strip())
                 return {"open_metal_sites_count": count}
             except (IndexError, ValueError) as e:
                 raise ValueError(f"Failed to parse OMS count from line: '{line}'. Error: {e}")
 
-    # If the specific line is not found, the output is considered invalid.
     raise ValueError("Could not find the line 'Number of open metal sites' in the .oms output.")

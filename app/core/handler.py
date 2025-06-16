@@ -42,13 +42,10 @@ async def process_zeo_request(
     # Create a copy of the args to avoid modifying the original list
     final_zeo_args = zeo_args.copy()
     
-    # THE FIX IS HERE:
-    # Add the actual input file name to the end of the arguments list.
     final_zeo_args.append(input_path.name)
 
     logger.info(f"[{task_name}] Running Zeo++ with args: {' '.join(final_zeo_args)}")
     
-    # Pass the corrected arguments to the runner
     result = runner.run_command(
         structure_file=input_path,
         zeo_args=final_zeo_args,
