@@ -121,7 +121,7 @@ curl -X 'POST' \
 | `/api/accessible_volume` → Zeo++ `-vol` | 计算给定探针的可及体积 |
 | `/api/probe_volume` → Zeo++ `-volpo` | 计算特定点/区域的探针可占据体积 |
 | `/api/channel_analysis` → Zeo++ `-chan` | 识别和分析通道 |
-| `/api/pore_size_dist` → Zeo++ `-psd` | 计算孔径分布直方图 |
+| `/api/pore_size_dist/download` → Zeo++ `-psd` | 下载孔径分布直方图的数据文件 |
 | `/api/blocking_spheres` → Zeo++ `-block` | 识别不可及区域并生成阻塞球 |
 
 ### 结构信息分析

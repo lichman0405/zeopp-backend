@@ -121,7 +121,7 @@ All endpoints require a `structure_file` uploaded as a file.
 | `/api/accessible_volume` → Zeo++ `-vol` | Compute the accessible volume for a given probe |
 | `/api/probe_volume` → Zeo++ `-volpo` | Compute the probe-occupiable volume for a specific point or region |
 | `/api/channel_analysis` → Zeo++ `-chan` | Identify and analyze channels |
-| `/api/pore_size_dist` → Zeo++ `-psd` | Compute pore size distribution histogram |
+| `/api/pore_size_dist/download` → Zeo++ `-psd` | Download pore size distribution histogram data file |
 | `/api/blocking_spheres` → Zeo++ `-block` | Identify inaccessible regions and generate blocking spheres |
 
 ### Structural Information Analysis
