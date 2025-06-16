@@ -5,3 +5,4 @@ sh>=1.14.3
 rich>=13.3.5
 python-dotenv>=1.0.0
 pydantic
+python-dotenv
