@@ -216,46 +216,49 @@ def parse_block_from_text(text: str) -> dict:
 
 def parse_strinfo_from_text(text: str) -> dict:
     """
-    Parses the dense single-line content of a .strinfo file using regular expressions.
-    Example format:
-    result.strinfo   ...   1 segments: 1 framework(s) (1D/2D/3D 0 0 1 ) and  0  molecule(s). ...
+    Parses the dense single-line content of a .strinfo file using a comprehensive
+    regular expression to extract all available details.
     """
     text = text.strip()
+
+    pattern = re.compile(
+        r'^(?P<filename>\S+)\s+'
+        r'(?P<formula>\S+)\s+'
+        r'(?P<segments>\d+)\s*segments:\s*'
+        r'(?P<num_frameworks>\d+)\s*framework\(s\)\s*'
+        r'\(1D/2D/3D\s+(?P<dims_1d>\d+)\s+(?P<dims_2d>\d+)\s+(?P<dims_3d>\d+)\s*\)\s*and\s*'
+        r'(?P<num_molecules>\d+)\s*molecule\(s\)'
+    )
     
-    try:
-        num_frameworks_match = re.search(r'(\d+)\s*framework\(s\)', text)
-        if not num_frameworks_match:
-            raise ValueError("Could not find framework count in the .strinfo output.")
+    match = pattern.search(text)
+    
+    if not match:
+        raise ValueError(f"Failed to parse .strinfo file. The format was not recognized. Content: '{text}'")
         
-        num_frameworks = int(num_frameworks_match.group(1))
-        
-        framework_details = []
-        
-        if num_frameworks > 0:
-            dim_distribution_match = re.search(r'\(1D/2D/3D\s+(\d+)\s+(\d+)\s+(\d+)\s*\)', text)
-            if not dim_distribution_match:
-                raise ValueError("Could not determine framework dimensionality distribution from the output.")
-            
-            dims_1d, dims_2d, dims_3d = map(int, dim_distribution_match.groups())
+    data = match.groupdict()
+    
+    num_frameworks = int(data['num_frameworks'])
+    framework_details = []
+    
+    fw_id_counter = 1
+    for _ in range(int(data['dims_3d'])):
+        framework_details.append({"framework_id": fw_id_counter, "dimensionality": 3})
+        fw_id_counter += 1
+    for _ in range(int(data['dims_2d'])):
+        framework_details.append({"framework_id": fw_id_counter, "dimensionality": 2})
+        fw_id_counter += 1
+    for _ in range(int(data['dims_1d'])):
+        framework_details.append({"framework_id": fw_id_counter, "dimensionality": 1})
+        fw_id_counter += 1
 
-            fw_id_counter = 1
-            for _ in range(dims_3d):
-                framework_details.append({"framework_id": fw_id_counter, "dimensionality": 3})
-                fw_id_counter += 1
-            for _ in range(dims_2d):
-                framework_details.append({"framework_id": fw_id_counter, "dimensionality": 2})
-                fw_id_counter += 1
-            for _ in range(dims_1d):
-                framework_details.append({"framework_id": fw_id_counter, "dimensionality": 1})
-                fw_id_counter += 1
-
-        return {
-            "number_of_frameworks": num_frameworks,
-            "frameworks": framework_details
-        }
-    except Exception as e:
-        raise ValueError(f"Failed to parse .strinfo file. Content: '{text}'. Error: {e}")
-
+    return {
+        "filename": data['filename'],
+        "formula": data['formula'],
+        "segments": int(data['segments']),
+        "number_of_frameworks": num_frameworks,
+        "number_of_molecules": int(data['num_molecules']),
+        "frameworks": framework_details
+    }
 
 def parse_oms_from_text(text: str) -> dict:
     """

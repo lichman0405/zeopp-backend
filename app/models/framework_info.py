@@ -5,7 +5,7 @@
 
 
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class FrameworkDetail(BaseModel):
     """
@@ -16,8 +16,12 @@ class FrameworkDetail(BaseModel):
 
 class FrameworkInfoResponse(BaseModel):
     """
-    Defines the response structure for the framework info API.
+    Defines the new, more detailed response structure for the framework info API.
     """
+    filename: str
+    formula: str
+    segments: int
     number_of_frameworks: int
+    number_of_molecules: int
     frameworks: List[FrameworkDetail]
     cached: bool
