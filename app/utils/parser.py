@@ -4,6 +4,8 @@
 # Date: 2025-05-13
 
 
+import re
+
 def parse_vol_from_text(text: str) -> dict:
     """
     Parse content of Zeo++ .vol file from string for volume and density.
@@ -210,6 +212,50 @@ def parse_block_from_text(text: str) -> dict:
                 pass
 
     return result
+
+
+def parse_strinfo_from_text(text: str) -> dict:
+    """
+    Parses the dense single-line content of a .strinfo file using regular expressions.
+    Example format:
+    result.strinfo   ...   1 segments: 1 framework(s) (1D/2D/3D 0 0 1 ) and  0  molecule(s). ...
+    """
+    text = text.strip()
+    
+    try:
+        num_frameworks_match = re.search(r'(\d+)\s*framework\(s\)', text)
+        if not num_frameworks_match:
+            raise ValueError("Could not find framework count in the .strinfo output.")
+        
+        num_frameworks = int(num_frameworks_match.group(1))
+        
+        framework_details = []
+        
+        if num_frameworks > 0:
+            dim_distribution_match = re.search(r'\(1D/2D/3D\s+(\d+)\s+(\d+)\s+(\d+)\s*\)', text)
+            if not dim_distribution_match:
+                raise ValueError("Could not determine framework dimensionality distribution from the output.")
+            
+            dims_1d, dims_2d, dims_3d = map(int, dim_distribution_match.groups())
+
+            fw_id_counter = 1
+            for _ in range(dims_3d):
+                framework_details.append({"framework_id": fw_id_counter, "dimensionality": 3})
+                fw_id_counter += 1
+            for _ in range(dims_2d):
+                framework_details.append({"framework_id": fw_id_counter, "dimensionality": 2})
+                fw_id_counter += 1
+            for _ in range(dims_1d):
+                framework_details.append({"framework_id": fw_id_counter, "dimensionality": 1})
+                fw_id_counter += 1
+
+        return {
+            "number_of_frameworks": num_frameworks,
+            "frameworks": framework_details
+        }
+    except Exception as e:
+        raise ValueError(f"Failed to parse .strinfo file. Content: '{text}'. Error: {e}")
+
 
 def parse_oms_from_text(text: str) -> dict:
     """
