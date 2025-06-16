@@ -3,7 +3,7 @@
 # Author: Shibo Li
 # Date: 2025-05-13
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional
 
 class PoreDiameterRequest(BaseModel):

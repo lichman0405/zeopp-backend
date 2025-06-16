@@ -1,60 +1,62 @@
-# Pore Size Distribution API Endpoint
-# -*- coding: utf-8 -*-
+# Pore Size Distribution API Endpoint refactored to use a handler function
 # Author: Shibo Li
-# Date: 2025-05-13
+# Date: 2025-06-16
+# Version: 0.2.0
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from fastapi.responses import JSONResponse
-from pathlib import Path
-
-from app.core.runner import ZeoRunner
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
+from typing import Optional
 from app.models.pore_size_dist import PoreSizeDistResponse
-from app.utils.file import save_uploaded_file
+from app.utils.parser import parse_psd_from_text
+from app.core.handler import process_zeo_request
 
 router = APIRouter()
-runner = ZeoRunner()
 
-@router.post("/api/pore_size_dist", response_model=PoreSizeDistResponse)
-async def compute_pore_size_distribution(
-    structure_file: UploadFile = File(...),
-    chan_radius: float = Form(...),
-    probe_radius: float = Form(...),
-    samples: int = Form(...),
-    output_filename: str = Form("result.psd_histo"),
-    ha: bool = Form(True)
+@router.post(
+    "/api/pore_size_dist",
+    response_model=PoreSizeDistResponse,
+    summary="Calculate Pore Size Distribution (psd)",
+    tags=["Analysis"]
+)
+async def compute_pore_size_dist(
+    structure_file: UploadFile = File(..., description="A .cif, .cssr, .v1, or .arc file."),
+    probe_radius: float = Form(1.21, description="Radius of the probe for MC sampling. Must be <= chan_radius."),
+    chan_radius: Optional[float] = Form(None, description="Radius for accessibility check. Defaults to probe_radius."),
+    samples: int = Form(50000, description="Number of Monte Carlo samples per unit cell for integration."),
+    ha: bool = Form(True, description="Enable high accuracy mode."),
 ):
     """
-    Compute pore size distribution using Zeo++ -psd command (text-only return)
+    Calculates the pore size distribution histogram.
+    Corresponds to the `-psd` flag in Zeo++.
+    The actual result is read from the `_histo` output file.
     """
-    input_path: Path = save_uploaded_file(structure_file, prefix="psd")
+    base_output_filename = "result.psd"
 
-    args = []
-    if ha:
-        args.append("-ha")
-    args += ["-psd", str(chan_radius), str(probe_radius), str(samples), output_filename, input_path.name]
+    final_output_filename = f"{base_output_filename}_histo"
 
-    result = runner.run_command(
-        structure_file=input_path,
-        zeo_args=args,
-        output_files=[output_filename],
-        extra_identifier="pore_size_dist"
-    )
+    effective_chan_radius = chan_radius if chan_radius is not None else probe_radius
 
-    if not result["success"]:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "message": "Zeo++ failed",
-                "stderr": result["stderr"]
-            }
+    if probe_radius > effective_chan_radius:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid radii: probe_radius ({probe_radius}) cannot be greater than chan_radius ({effective_chan_radius})."
         )
 
-    content = result["output_data"].get(output_filename)
-    if not content:
-        raise HTTPException(status_code=500, detail=f"Output file '{output_filename}' was not generated.")
+    zeo_args = [
+        "-psd",
+        str(effective_chan_radius),
+        str(probe_radius),
+        str(samples),
+        base_output_filename
+    ]
 
-    return PoreSizeDistResponse(
-        content=content,
-        cached=result["cached"]
+    if ha:
+        zeo_args.insert(0, "-ha")
+
+    return await process_zeo_request(
+        structure_file=structure_file,
+        zeo_args=zeo_args,
+        output_files=[final_output_filename], 
+        parser=parse_psd_from_text,
+        response_model=PoreSizeDistResponse,
+        task_name="pore_size_dist"
     )

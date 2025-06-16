@@ -1,63 +1,60 @@
-# Accessible Volume API Endpoint
-# -*- coding: utf-8 -*-
+# Accessible Volume API Endpoint refactored to use a handler function
 # Author: Shibo Li
-# Date: 2025-05-13
+# Date: 2025-06-16
+# Version: 0.2.0
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from fastapi.responses import JSONResponse
-from pathlib import Path
-
-from app.core.runner import ZeoRunner
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
 from app.models.accessible_volume import AccessibleVolumeResponse
-from app.utils.file import save_uploaded_file
 from app.utils.parser import parse_vol_from_text
+from app.core.handler import process_zeo_request
 
 router = APIRouter()
-runner = ZeoRunner()
 
-@router.post("/api/accessible_volume", response_model=AccessibleVolumeResponse)
+@router.post(
+        "/api/accessible_volume", 
+        response_model=AccessibleVolumeResponse,
+        summary="Calculate Accessible Volume (vol)",
+        tags=["Analysis"]
+)
+
 async def compute_accessible_volume(
-    structure_file: UploadFile = File(...),
-    chan_radius: float = Form(...),
-    probe_radius: float = Form(...),
-    samples: int = Form(...),
-    output_filename: str = Form("result.vol"),
-    ha: bool = Form(True)
+    structure_file: UploadFile = File(..., description="A .cif, .cssr, .v1, or .arc file."),
+    chan_radius: float = Form(1.21, description="Channel radius in Angstroms."),
+    probe_radius: float = Form(1.21, description="Radius of the probe molecule in Angstroms."),
+    samples: int = Form(2000, description="Number of Monte Carlo samples for integration."),
+    output_filename: str = Form("result.sa", description="Name of the output file containing accessible volume results."),
+    ha: bool = Form(True, description="Whether to use high accuracy mode (default: True)")
+
 ):
     """
-    Compute accessible volume using Zeo++ -vol command
+    Calcualte the accessible volume of the framework using a Monte Carlo sampling method.
+    Corresponds to the `-vol` flag in Zeo++.
     """
-    input_path: Path = save_uploaded_file(structure_file, prefix="vol")
 
-    args = []
-    if ha:
-        args.append("-ha")
-    args += ["-vol", str(chan_radius), str(probe_radius), str(samples), output_filename, input_path.name]
-
-    result = runner.run_command(
-        structure_file=input_path,
-        zeo_args=args,
-        output_files=[output_filename],
-        extra_identifier="accessible_volume"
-    )
-
-    if not result["success"]:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "message": "Zeo++ failed",
-                "stderr": result["stderr"]
-            }
+    output_filename = "result.vol"
+    
+    effective_chan_radius = chan_radius if chan_radius is not None else probe_radius
+    if probe_radius > effective_chan_radius:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid radii: probe_radius ({probe_radius}) cannot be greater than chan_radius ({effective_chan_radius})."
         )
+    
+    zeo_args = [
+        "-vol",
+        str(effective_chan_radius),
+        str(probe_radius),
+        str(samples),
+        output_filename,
+    ]
+    if ha:
+        zeo_args.insert(0, "-ha")
 
-    output_text = result["output_data"].get(output_filename)
-    if not output_text:
-        raise HTTPException(status_code=500, detail=f"Output file '{output_filename}' was not generated.")
-
-    parsed = parse_vol_from_text(output_text)
-
-    return AccessibleVolumeResponse(
-        **parsed,
-        cached=result["cached"]
+    return await process_zeo_request(
+        structure_file=structure_file,
+        zeo_args=zeo_args,
+        output_files=[output_filename],
+        parser=parse_vol_from_text,
+        response_model=AccessibleVolumeResponse,
+        task_name="accessible_volume"
     )

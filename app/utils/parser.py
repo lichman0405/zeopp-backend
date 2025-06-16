@@ -3,10 +3,6 @@
 # Author: Shibo Li
 # Date: 2025-05-13
 
-import re
-from pathlib import Path
-from typing import Dict, Any
-
 
 def parse_vol_from_text(text: str) -> dict:
     """
@@ -215,92 +211,109 @@ def parse_block_from_text(text: str) -> dict:
 
     return result
 
+def parse_psd_from_text(text: str) -> dict:
+    """
+    Parses the content of a .psd_histo file into a list of histogram data points.
+    Each line is expected to contain four float values:
+    1. Radius
+    2. Pore Volume (dV)
+    3. Cumulative Pore Volume (V)
+    4. Derivative Pore Volume (dV/d(log(r)))
+
+    Args:
+        text (str): The string content of the .psd_histo file.
+
+    Returns:
+        A dictionary containing the list of parsed histogram data, suitable for the response model.
+    
+    Raises:
+        ValueError: If the file content is empty or cannot be parsed correctly.
+    """
+    histogram_data = []
+    lines = text.strip().splitlines()
+
+    # Iterate over each line in the file content
+    for line in lines:
+        # Skip comments or empty lines
+        if line.strip().startswith('#') or not line.strip():
+            continue
+        
+        try:
+            parts = line.split()
+            # Ensure the line has at least the 4 required columns
+            if len(parts) < 4:
+                continue
+            
+            data_point = {
+                "radius": float(parts[0]),
+                "pore_volume": float(parts[1]),
+                "cumulative_volume": float(parts[2]),
+                "derivative_pore_volume": float(parts[3]),
+            }
+            histogram_data.append(data_point)
+        except (ValueError, IndexError) as e:
+            # If any line is malformed, raise an error to be caught by the API handler
+            raise ValueError(f"Failed to parse line in .psd_histo file: '{line}'. Error: {e}")
+    
+    # If after processing all lines, no data was extracted, the output is considered invalid.
+    if not histogram_data:
+        raise ValueError("No valid data points found in the .psd_histo output.")
+
+    return {"psd_histogram_data": histogram_data}
+
 
 def parse_strinfo_from_text(text: str) -> dict:
     """
-    Parse .strinfo file content and extract framework count and dimensionality.
-
-    Expected format:
-    Molecule types found: 1
-    Molecule 0: Dimensionality = 3
-    Identified 1 channels and 0 pockets
-    108 nodes assigned to pores.
-
-    Returns:
-        {
-            "num_frameworks": int,
-            "frameworks": List[{"id": int, "dimensionality": int}],
-            "channels": int,
-            "pockets": int,
-            "nodes_assigned": int,
-            "raw": str
-        }
+    Parses the content of a .strinfo file.
+    Example format:
+    Number of frameworks: 1
+    Framework 1 dimensionality: 3
     """
-    lines = text.strip().splitlines()
     frameworks = []
-    channels = 0
-    pockets = 0
-    nodes = 0
+    lines = text.strip().splitlines()
+    if not lines:
+        raise ValueError("Empty .strinfo file content.")
 
-    for line in lines:
-        if "Molecule types found" in line:
-            pass  # total is counted by len(frameworks)
-        elif line.startswith("Molecule"):
-            tokens = line.strip().split()
-            frameworks.append({
-                "id": int(tokens[1].strip(":")),
-                "dimensionality": int(tokens[-1])
-            })
-        elif "Identified" in line and "channels" in line:
-            parts = line.split()
-            channels = int(parts[1])
-            pockets = int(parts[4])
-        elif "nodes assigned to pores" in line:
-            try:
-                nodes = int(line.split()[0])
-            except Exception:
-                pass
+    try:
+        # First line contains the number of frameworks
+        num_frameworks_line = lines[0]
+        num_frameworks = int(num_frameworks_line.split(":")[1].strip())
 
-    return {
-        "num_frameworks": len(frameworks),
-        "frameworks": frameworks,
-        "channels": channels,
-        "pockets": pockets,
-        "nodes_assigned": nodes,
-        "raw": text.strip()
-    }
+        # Subsequent lines contain info for each framework
+        for line in lines[1:]:
+            if "dimensionality" in line:
+                parts = line.split()
+                framework_id = int(parts[1])
+                dimensionality = int(parts[3])
+                frameworks.append({
+                    "framework_id": framework_id,
+                    "dimensionality": dimensionality
+                })
 
+        if len(frameworks) != num_frameworks:
+            raise ValueError("Mismatch between reported number of frameworks and parsed framework details.")
 
-def parse_nt2_from_text(text: str) -> dict:
-    """
-    Parse Zeo++ .nt2 file to extract basic Voronoi network statistics.
-
-    Looks for:
-    - Node count: lines starting with 'node' (ignoring comments)
-    - Edge count: lines starting with 'edge'
-
-    Returns:
-        {
-            "node_count": int,
-            "edge_count": int,
-            "raw": str
+        return {
+            "number_of_frameworks": num_frameworks,
+            "frameworks": frameworks
         }
+    except (IndexError, ValueError) as e:
+        raise ValueError(f"Failed to parse .strinfo file content: '{text}'. Error: {e}")
+
+def parse_oms_from_text(text: str) -> dict:
+    """
+    Parses the content of a .oms file to find the count of open metal sites.
+    It looks for a line containing "Number of open metal sites:".
     """
     lines = text.strip().splitlines()
-    node_count = 0
-    edge_count = 0
-
     for line in lines:
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("node"):
-            node_count += 1
-        elif line.startswith("edge"):
-            edge_count += 1
+        if "Number of open metal sites" in line:
+            try:
+                # Assumes format "Number of open metal sites: 5"
+                count = int(line.split(":")[1].strip())
+                return {"open_metal_sites_count": count}
+            except (IndexError, ValueError) as e:
+                raise ValueError(f"Failed to parse OMS count from line: '{line}'. Error: {e}")
 
-    return {
-        "node_count": node_count,
-        "edge_count": edge_count,
-        "raw": text.strip()
-    }
+    # If the specific line is not found, the output is considered invalid.
+    raise ValueError("Could not find the line 'Number of open metal sites' in the .oms output.")

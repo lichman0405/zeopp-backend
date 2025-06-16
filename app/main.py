@@ -13,12 +13,10 @@ from app.api import (
     accessible_volume,
     probe_volume,
     channel_analysis,
-    structure_info,
+    framework_info,
     pore_size_dist,
-    ray_tracing,
     blocking_spheres,
-    distance_grid,
-    voronoi_network
+    open_metal_sites
 )
 
 app = FastAPI(
@@ -42,9 +40,7 @@ app.include_router(surface_area.router)
 app.include_router(accessible_volume.router)
 app.include_router(probe_volume.router)
 app.include_router(channel_analysis.router)
-app.include_router(structure_info.router)
+app.include_router(framework_info.router)
 app.include_router(pore_size_dist.router)
-app.include_router(ray_tracing.router)
 app.include_router(blocking_spheres.router)
-app.include_router(distance_grid.router)
-app.include_router(voronoi_network.router)
+app.include_router(open_metal_sites.router)

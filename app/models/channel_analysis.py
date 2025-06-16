@@ -4,8 +4,7 @@
 # Date: 2025-05-13
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict
-
+from typing import Optional
 
 class ChannelAnalysisRequest(BaseModel):
     probe_radius: float = Field(..., description="Radius of spherical probe")
