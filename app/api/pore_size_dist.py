@@ -3,7 +3,6 @@
 # Date: 2025-06-16
 # Version: 0.2.0
 
-# /app/api/pore_size_dist.py (Corrected Special Case Version)
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
 from typing import Optional
@@ -57,8 +56,9 @@ async def compute_pore_size_dist(
     ]
     if ha:
         zeo_args.insert(0, "-ha")
-    final_runner_args = zeo_args + [input_path.name]
 
+    final_runner_args = zeo_args + [input_path.name]
+ 
     logger.info(f"[{task_name}] Running Zeo++ with args: {' '.join(final_runner_args)}")
     
     result = runner.run_command(
