@@ -211,42 +211,6 @@ def parse_block_from_text(text: str) -> dict:
 
     return result
 
-def parse_psd_from_text(text: str) -> dict:
-    """
-    Parses the content of a .psd_histo file into a list of histogram data points.
-    This version is more robust and skips header lines that do not start with numbers.
-    """
-    histogram_data = []
-    lines = text.strip().splitlines()
-
-    for line in lines:
-        line = line.strip()
-        if line.startswith('#') or not line:
-            continue
-        
-        parts = line.split()
-        if len(parts) < 4:
-            continue
-        
-        try:
-            float(parts[0])
-
-            data_point = {
-                "radius": float(parts[0]),
-                "pore_volume": float(parts[1]),
-                "cumulative_volume": float(parts[2]),
-                "derivative_pore_volume": float(parts[3]),
-            }
-            histogram_data.append(data_point)
-        except (ValueError, IndexError):
-            continue
-    
-    if not histogram_data:
-        raise ValueError("No valid numerical data points found in the .psd_histo output.")
-
-    return {"psd_histogram_data": histogram_data}
-
-
 def parse_strinfo_from_text(text: str) -> dict:
     """
     Parses the content of a .strinfo file.
