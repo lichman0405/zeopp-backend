@@ -11,7 +11,7 @@ from app.core.handler import process_zeo_request
 router = APIRouter()
 
 @router.post(
-        "/api/accessible_volume", 
+        "/api/v1/accessible_volume", 
         response_model=AccessibleVolumeResponse,
         summary="Calculate Accessible Volume (vol)",
         tags=["Analysis"]

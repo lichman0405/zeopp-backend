@@ -11,7 +11,7 @@ from app.core.handler import process_zeo_request
 router = APIRouter()
 
 @router.post(
-    "/api/blocking_spheres",
+    "/api/v1/blocking_spheres",
     response_model=BlockingSpheresResponse,
     summary="Generate Blocking Spheres (-block)",
     tags=["Calculation"]

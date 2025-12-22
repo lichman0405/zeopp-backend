@@ -11,7 +11,7 @@ from app.core.handler import process_zeo_request
 router = APIRouter()
 
 @router.post(
-    "/api/framework_info",
+    "/api/v1/framework_info",
     response_model=FrameworkInfoResponse,
     summary="Get Framework Info (-strinfo)",
     tags=["Structure Analysis"]

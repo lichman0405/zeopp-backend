@@ -12,7 +12,7 @@ from app.core.handler import process_zeo_request
 router = APIRouter()
 
 @router.post(
-    "/api/surface_area",
+    "/api/v1/surface_area",
     response_model=SurfaceAreaResponse,
     summary="Calculate Accessible Surface Area (sa)",
     tags=["Analysis"]

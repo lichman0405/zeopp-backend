@@ -11,7 +11,7 @@ from app.core.handler import process_zeo_request
 router = APIRouter()
 
 @router.post(
-        "/api/probe_volume", 
+        "/api/v1/probe_volume", 
         response_model=ProbeVolumeResponse,
         summary="Calculate Probe-Occupiable Volume (volpo)",
         tags=["Analysis"]

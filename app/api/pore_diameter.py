@@ -13,7 +13,7 @@ from app.core.handler import process_zeo_request
 router = APIRouter()
 
 @router.post(
-    "/api/pore_diameter",
+    "/api/v1/pore_diameter",
     response_model=PoreDiameterResponse,
     summary="Calculate Pore Diameter (res)",
     tags=["Analysis"]

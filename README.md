@@ -95,41 +95,80 @@ uvicorn app.main:app --reload
 
 ## 📋 使用示例
 
-项目启动后，可使用任何 HTTP 客户端调用 API。示例（使用 curl 计算孔径）：
+项目启动后，可使用任何 HTTP 客户端调用 API。
+
+### 测试健康检查
+
+```bash
+# 基本健康检查
+curl http://localhost:9876/health
+
+# 详细健康检查
+curl http://localhost:9876/health/detailed
+
+# 获取版本信息
+curl http://localhost:9876/version
+```
+
+### 调用分析端点
+
+示例：使用 curl 计算孔径
 
 ```bash
 curl -X 'POST' \
-  'http://localhost:8000/api/pore_diameter' \
+  'http://localhost:9876/api/v1/pore_diameter' \
   -H 'accept: application/json' \
   -H 'Content-Type: multipart/form-data' \
   -F 'structure_file=@/path/to/your/file.cif' \
   -F 'ha=true'
 ```
 
-请将 `/path/to/your/file.cif` 替换为本地结构文件路径。参数（如 `ha=true`）以表单字段 `-F` 形式发送。交互式文档（Swagger UI）位于 [http://localhost:8000/docs](http://localhost:8000/docs)。
+请将 `/path/to/your/file.cif` 替换为本地结构文件路径。参数（如 `ha=true`）以表单字段 `-F` 形式发送。
+
+### 交互式文档
+
+访问 Swagger UI 进行交互式测试：[http://localhost:9876/docs](http://localhost:9876/docs)
 
 ## 📚 API 参考
 
+### 系统端点
+
+| 路径 | 功能 |
+| --- | --- |
+| `/health` | 基本健康检查，验证服务运行状态 |
+| `/health/detailed` | 详细健康检查，包含系统信息和 Zeo++ 可用性 |
+| `/version` | 获取 API 版本信息 |
+
+### 核心几何学分析（v1 API）
+
 所有端点均需上传 `structure_file` 文件。
 
-### 核心几何学分析
+| 路径 | 功能 |
+| --- | --- |
+| `/api/v1/pore_diameter` → Zeo++ `-res` | 计算最大可及球（Di）和最大包含球（Df）直径 |
+| `/api/v1/surface_area` → Zeo++ `-sa` | 使用蒙特卡洛采样计算可及表面积 |
+| `/api/v1/accessible_volume` → Zeo++ `-vol` | 计算给定探针的可及体积 |
+| `/api/v1/probe_volume` → Zeo++ `-volpo` | 计算特定点/区域的探针可占据体积 |
+| `/api/v1/channel_analysis` → Zeo++ `-chan` | 识别和分析通道 |
+| `/api/v1/pore_size_dist/download` → Zeo++ `-psd` | 下载孔径分布直方图的数据文件 |
+| `/api/v1/blocking_spheres` → Zeo++ `-block` | 识别不可及区域并生成阻塞球 |
+
+### 结构信息分析（v1 API）
 
 | 路径 | 功能 |
 | --- | --- |
-| `/api/pore_diameter` → Zeo++ `-res` | 计算最大可及球（Di）和最大包含球（Df）直径 |
-| `/api/surface_area` → Zeo++ `-sa` | 使用蒙特卡洛采样计算可及表面积 |
-| `/api/accessible_volume` → Zeo++ `-vol` | 计算给定探针的可及体积 |
-| `/api/probe_volume` → Zeo++ `-volpo` | 计算特定点/区域的探针可占据体积 |
-| `/api/channel_analysis` → Zeo++ `-chan` | 识别和分析通道 |
-| `/api/pore_size_dist/download` → Zeo++ `-psd` | 下载孔径分布直方图的数据文件 |
-| `/api/blocking_spheres` → Zeo++ `-block` | 识别不可及区域并生成阻塞球 |
+| `/api/v1/framework_info` → Zeo++ `-strinfo` | 识别结构中框架数量及其维度 |
+| `/api/v1/open_metal_sites` → Zeo++ `-oms` | 计算开放金属位点数量 |
 
-### 结构信息分析
+## 🔄 版本说明
 
-| 路径 | 功能 |
-| --- | --- |
-| `/api/framework_info` → Zeo++ `-strinfo` | 识别结构中框架数量及其维度 |
-| `/api/open_metal_sites` → Zeo++ `-oms` | 计算开放金属位点数量 |
+**当前版本：v0.3.0**
+
+### 新增特性（v0.3.0）
+- ✅ API 版本控制：所有分析端点现在使用 `/api/v1/` 前缀
+- ✅ 健康检查端点：`/health` 和 `/health/detailed`
+- ✅ 改进的错误处理：使用自定义异常类型，提供更详细的错误信息
+- ✅ 版本信息端点：`/version`
 
 ## 📜 许可证
 

@@ -15,7 +15,7 @@ router = APIRouter()
 runner = ZeoRunner()
 
 @router.post(
-    "/api/pore_size_dist/download", 
+    "/api/v1/pore_size_dist/download", 
     response_class=FileResponse, 
     summary="Calculate and Download Pore Size Distribution File",
     tags=["Analysis"]

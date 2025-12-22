@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 # Author: Shibo Li
 # Date: 2025-05-13
+# Updated: 2025-12-22 - Enhanced error handling
 
 
 import re
+from app.core.exceptions import ZeoppParsingError
+from app.utils.logger import logger
 
 def parse_vol_from_text(text: str) -> dict:
     """
@@ -20,10 +23,17 @@ def parse_vol_from_text(text: str) -> dict:
         - density
         - av (dict with keys: unitcell, fraction, mass)
         - nav (dict with keys: unitcell, fraction, mass)
+    
+    Raises:
+        ZeoppParsingError: If the output format is invalid
     """
     lines = text.strip().splitlines()
     if len(lines) < 2:
-        raise ValueError("VOL output incomplete or malformed.")
+        raise ZeoppParsingError(
+            "VOL output incomplete or malformed. Expected at least 2 lines.",
+            output_file="result.vol",
+            raw_content=text
+        )
 
     tokens1 = lines[0].split()
     tokens2 = lines[1].split()
@@ -31,7 +41,11 @@ def parse_vol_from_text(text: str) -> dict:
     def extract(name: str, tokens: list[str]) -> float:
         try:
             return float(tokens[tokens.index(name) + 1])
-        except (ValueError, IndexError):
+        except ValueError as e:
+            logger.warning(f"Failed to convert '{name}' value to float: {e}")
+            return 0.0
+        except IndexError:
+            logger.warning(f"Key '{name}' not found in tokens")
             return 0.0
 
     return {
@@ -66,33 +80,52 @@ def parse_chan_from_text(text: str) -> dict:
         - free_diameter
         - included_along_free
     
+    Raises:
+        ZeoppParsingError: If the output format is invalid
         """
     lines = text.strip().splitlines()
+    default_result = {
+        "dimension": 0,
+        "included_diameter": 0.0,
+        "free_diameter": 0.0,
+        "included_along_free": 0.0
+    }
+    
     if not lines or len(lines) < 2:
-        return {
-            "dimension": 0,
-            "included_diameter": 0.0,
-            "free_diameter": 0.0,
-            "included_along_free": 0.0
-        }
+        logger.warning("CHAN output has fewer than 2 lines, returning default values")
+        return default_result
 
     try:
         dim_line = lines[0]
-        dim = int(dim_line.split("dimensionality")[1].strip()[0])
+        if "dimensionality" not in dim_line:
+            raise ZeoppParsingError(
+                "Expected 'dimensionality' keyword not found in first line",
+                output_file="result.chan",
+                raw_content=text
+            )
+        
+        # Extract dimensionality value
+        dim_part = dim_line.split("dimensionality")[1].strip()
+        dim = int(dim_part.split()[0] if ' ' in dim_part else dim_part[0])
+        
+        # Parse second line
         tokens = lines[1].split()
+        if len(tokens) < 5:
+            raise ZeoppParsingError(
+                f"Expected at least 5 tokens in second line, got {len(tokens)}",
+                output_file="result.chan",
+                raw_content=text
+            )
+        
         return {
             "dimension": dim,
             "included_diameter": float(tokens[2]),
             "free_diameter": float(tokens[3]),
             "included_along_free": float(tokens[4])
         }
-    except Exception:
-        return {
-            "dimension": 0,
-            "included_diameter": 0.0,
-            "free_diameter": 0.0,
-            "included_along_free": 0.0
-        }
+    except (ValueError, IndexError) as e:
+        logger.warning(f"Failed to parse CHAN data: {e}. Returning default values.")
+        return default_result
 
 
 def parse_sa_from_text(text: str) -> dict:
@@ -111,10 +144,17 @@ def parse_sa_from_text(text: str) -> dict:
         - nasa_unitcell
         - nasa_volume
         - nasa_mass
+    
+    Raises:
+        ZeoppParsingError: If the output format is invalid
     """
     lines = text.strip().splitlines()
     if len(lines) < 2:
-        raise ValueError("SA output incomplete or malformed.")
+        raise ZeoppParsingError(
+            "SA output incomplete or malformed. Expected at least 2 lines.",
+            output_file="result.sa",
+            raw_content=text
+        )
 
     tokens1 = lines[0].split()
     tokens2 = lines[1].split()
@@ -122,8 +162,12 @@ def parse_sa_from_text(text: str) -> dict:
     def extract(name: str, tokens: list[str]) -> float:
         try:
             return float(tokens[tokens.index(name) + 1])
-        except (ValueError, IndexError):
-            return 0.0  # or raise a more descriptive error if desired
+        except ValueError as e:
+            logger.warning(f"Failed to convert '{name}' value to float: {e}")
+            return 0.0
+        except IndexError:
+            logger.warning(f"Key '{name}' not found in tokens")
+            return 0.0
 
     return {
         "asa_unitcell": extract("ASA_A^2:", tokens1),
@@ -142,10 +186,17 @@ def parse_volpo_from_text(text: str) -> dict:
     Format:
     @ ... POAV_A^3: <float> POAV_Volume_fraction: <float> POAV_cm^3/g: <float>
     PONAV_A^3: <float> PONAV_Volume_fraction: <float> PONAV_cm^3/g: <float>
+    
+    Raises:
+        ZeoppParsingError: If the output format is invalid
     """
     lines = text.strip().splitlines()
     if len(lines) < 2:
-        raise ValueError("VOLPO output malformed")
+        raise ZeoppParsingError(
+            "VOLPO output malformed. Expected at least 2 lines.",
+            output_file="result.volpo",
+            raw_content=text
+        )
 
     tokens1 = lines[0].split()
     tokens2 = lines[1].split()
@@ -153,7 +204,11 @@ def parse_volpo_from_text(text: str) -> dict:
     def extract(key: str, tokens: list[str]) -> float:
         try:
             return float(tokens[tokens.index(key) + 1])
-        except (ValueError, IndexError):
+        except ValueError as e:
+            logger.warning(f"Failed to convert '{key}' value to float: {e}")
+            return 0.0
+        except IndexError:
+            logger.warning(f"Key '{key}' not found in tokens")
             return 0.0
 
     return {
@@ -171,15 +226,30 @@ def parse_res_from_text(text: str) -> dict:
     Parse .res file text to extract pore diameters.
     Expected format:
     EDI.res    4.89082 3.03868  4.81969
+    
+    Raises:
+        ZeoppParsingError: If the output format is invalid
     """
     tokens = text.strip().split()
     if len(tokens) < 4:
-        raise ValueError("Malformed .res file output")
-    return {
-        "included_diameter": float(tokens[1]),
-        "free_diameter": float(tokens[2]),
-        "included_along_free": float(tokens[3])
-    }
+        raise ZeoppParsingError(
+            f"Malformed .res file output. Expected at least 4 tokens, got {len(tokens)}",
+            output_file="result.res",
+            raw_content=text
+        )
+    
+    try:
+        return {
+            "included_diameter": float(tokens[1]),
+            "free_diameter": float(tokens[2]),
+            "included_along_free": float(tokens[3])
+        }
+    except (ValueError, IndexError) as e:
+        raise ZeoppParsingError(
+            f"Failed to parse .res file values: {e}",
+            output_file="result.res",
+            raw_content=text
+        )
 
 
 def parse_block_from_text(text: str) -> dict:
@@ -203,13 +273,13 @@ def parse_block_from_text(text: str) -> dict:
                 parts = line.split()
                 result["channels"] = int(parts[1])
                 result["pockets"] = int(parts[4])
-            except Exception:
-                pass
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Failed to parse channels/pockets from line: {e}")
         elif "nodes assigned to pores" in line:
             try:
                 result["nodes_assigned"] = int(line.split()[0])
-            except Exception:
-                pass
+            except (ValueError, IndexError) as e:
+                logger.warning(f"Failed to parse nodes_assigned from line: {e}")
 
     return result
 
@@ -218,6 +288,9 @@ def parse_strinfo_from_text(text: str) -> dict:
     """
     Parses the dense single-line content of a .strinfo file using a comprehensive
     regular expression to extract all available details.
+    
+    Raises:
+        ZeoppParsingError: If the output format is invalid
     """
     text = text.strip()
 
@@ -233,7 +306,11 @@ def parse_strinfo_from_text(text: str) -> dict:
     match = pattern.search(text)
     
     if not match:
-        raise ValueError(f"Failed to parse .strinfo file. The format was not recognized. Content: '{text}'")
+        raise ZeoppParsingError(
+            "Failed to parse .strinfo file. The format was not recognized.",
+            output_file="result.strinfo",
+            raw_content=text
+        )
         
     data = match.groupdict()
     
@@ -264,6 +341,9 @@ def parse_oms_from_text(text: str) -> dict:
     """
     Parses the content of a .oms file to find the count of open metal sites.
     It looks for a line containing "Number of open metal sites:".
+    
+    Raises:
+        ZeoppParsingError: If the output format is invalid
     """
     lines = text.strip().splitlines()
     for line in lines:
@@ -272,6 +352,14 @@ def parse_oms_from_text(text: str) -> dict:
                 count = int(line.split(":")[1].strip())
                 return {"open_metal_sites_count": count}
             except (IndexError, ValueError) as e:
-                raise ValueError(f"Failed to parse OMS count from line: '{line}'. Error: {e}")
+                raise ZeoppParsingError(
+                    f"Failed to parse OMS count from line: '{line}'. Error: {e}",
+                    output_file="result.oms",
+                    raw_content=text
+                )
 
-    raise ValueError("Could not find the line 'Number of open metal sites' in the .oms output.")
+    raise ZeoppParsingError(
+        "Could not find the line 'Number of open metal sites' in the .oms output.",
+        output_file="result.oms",
+        raw_content=text
+    )

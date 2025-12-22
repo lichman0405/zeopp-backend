@@ -11,7 +11,7 @@ from app.core.handler import process_zeo_request
 router = APIRouter()
 
 @router.post(
-    "/api/open_metal_sites",
+    "/api/v1/open_metal_sites",
     response_model=OpenMetalSitesResponse,
     summary="Count Open Metal Sites (-oms)",
     tags=["Structure Analysis"]

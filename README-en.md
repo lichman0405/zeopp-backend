@@ -95,41 +95,80 @@ uvicorn app.main:app --reload
 
 ## 📋 Usage Example
 
-Once the project is running, you can call the API using any HTTP client. Example using `curl` to compute pore diameter:
+Once the project is running, you can call the API using any HTTP client.
+
+### Test Health Checks
+
+```bash
+# Basic health check
+curl http://localhost:9876/health
+
+# Detailed health check
+curl http://localhost:9876/health/detailed
+
+# Get version information
+curl http://localhost:9876/version
+```
+
+### Call Analysis Endpoints
+
+Example: compute pore diameter using `curl`
 
 ```bash
 curl -X 'POST' \
-  'http://localhost:8000/api/pore_diameter' \
+  'http://localhost:9876/api/v1/pore_diameter' \
   -H 'accept: application/json' \
   -H 'Content-Type: multipart/form-data' \
   -F 'structure_file=@/path/to/your/file.cif' \
   -F 'ha=true'
 ```
 
-Replace `/path/to/your/file.cif` with the actual path to your local structure file. Parameters (e.g., `ha=true`) are sent as form fields using `-F`. The interactive API documentation (Swagger UI) is available at [http://localhost:8000/docs](http://localhost:8000/docs).
+Replace `/path/to/your/file.cif` with the actual path to your local structure file. Parameters (e.g., `ha=true`) are sent as form fields using `-F`.
+
+### Interactive Documentation
+
+Visit the Swagger UI for interactive testing: [http://localhost:9876/docs](http://localhost:9876/docs)
 
 ## 📚 API Reference
 
+### System Endpoints
+
+| Path | Function |
+| --- | --- |
+| `/health` | Basic health check to verify the service is running |
+| `/health/detailed` | Detailed health check with system information and Zeo++ availability |
+| `/version` | Get API version information |
+
+### Core Geometry Analysis (v1 API)
+
 All endpoints require a `structure_file` uploaded as a file.
 
-### Core Geometry Analysis
+| Path | Function |
+| --- | --- |
+| `/api/v1/pore_diameter` → Zeo++ `-res` | Compute the largest included sphere (Di) and largest free sphere (Df) diameters |
+| `/api/v1/surface_area` → Zeo++ `-sa` | Compute accessible surface area using Monte Carlo sampling |
+| `/api/v1/accessible_volume` → Zeo++ `-vol` | Compute the accessible volume for a given probe |
+| `/api/v1/probe_volume` → Zeo++ `-volpo` | Compute the probe-occupiable volume for a specific point or region |
+| `/api/v1/channel_analysis` → Zeo++ `-chan` | Identify and analyze channels |
+| `/api/v1/pore_size_dist/download` → Zeo++ `-psd` | Download pore size distribution histogram data file |
+| `/api/v1/blocking_spheres` → Zeo++ `-block` | Identify inaccessible regions and generate blocking spheres |
+
+### Structural Information Analysis (v1 API)
 
 | Path | Function |
 | --- | --- |
-| `/api/pore_diameter` → Zeo++ `-res` | Compute the largest included sphere (Di) and largest free sphere (Df) diameters |
-| `/api/surface_area` → Zeo++ `-sa` | Compute accessible surface area using Monte Carlo sampling |
-| `/api/accessible_volume` → Zeo++ `-vol` | Compute the accessible volume for a given probe |
-| `/api/probe_volume` → Zeo++ `-volpo` | Compute the probe-occupiable volume for a specific point or region |
-| `/api/channel_analysis` → Zeo++ `-chan` | Identify and analyze channels |
-| `/api/pore_size_dist/download` → Zeo++ `-psd` | Download pore size distribution histogram data file |
-| `/api/blocking_spheres` → Zeo++ `-block` | Identify inaccessible regions and generate blocking spheres |
+| `/api/v1/framework_info` → Zeo++ `-strinfo` | Identify the number of frameworks and their dimensionality |
+| `/api/v1/open_metal_sites` → Zeo++ `-oms` | Compute the number of open metal sites |
 
-### Structural Information Analysis
+## 🔄 Version Information
 
-| Path | Function |
-| --- | --- |
-| `/api/framework_info` → Zeo++ `-strinfo` | Identify the number of frameworks and their dimensionality |
-| `/api/open_metal_sites` → Zeo++ `-oms` | Compute the number of open metal sites |
+**Current Version: v0.3.0**
+
+### New Features (v0.3.0)
+- ✅ API Versioning: All analysis endpoints now use `/api/v1/` prefix
+- ✅ Health Check Endpoints: `/health` and `/health/detailed`
+- ✅ Improved Error Handling: Custom exception types with detailed error messages
+- ✅ Version Information Endpoint: `/version`
 
 ## 📜 License
 

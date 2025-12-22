@@ -11,7 +11,7 @@ from app.utils.parser import parse_chan_from_text
 router = APIRouter()
 
 @router.post(
-        "/api/channel_analysis", 
+        "/api/v1/channel_analysis", 
         response_model=ChannelAnalysisResponse,
         summary="Analyze Channel Dimensionality (chan)",
         tags=["Analysis"]
