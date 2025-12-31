@@ -62,24 +62,43 @@ For detailed usage, please refer to the following documentation:
 
 #### Create Configuration File
 
-Copy `.env.example` (or create one if it does not exist) to `.env`. Usually, you don't need to change the default settings.
+Copy `.env.example` to `.env` and modify as needed:
+
+```bash
+cp .env.example .env
+```
+
+Common configuration options:
 
 ```ini
 # .env
-ZEO_EXEC_PATH=network
-ZEO_WORKSPACE=workspace
+
+# Service port (external access port)
+HOST_PORT=9876
+
+# Application settings
 ENABLE_CACHE=true
+LOG_LEVEL=INFO
+CORS_ORIGINS=*
+RATE_LIMIT_REQUESTS=100
+MAX_UPLOAD_SIZE_MB=50
+
+# Resource limits
+CPU_LIMIT=2
+MEMORY_LIMIT=2G
 ```
+
+> 💡 **Tip**: All configuration options are documented in `.env.example`. No need to modify `docker-compose.yml`.
 
 #### Launch with One Command
 
 In the project root directory, run:
 
 ```bash
-docker-compose up --build
+docker-compose up --build -d
 ```
 
-Docker will automatically build the image (including downloading and compiling Zeo++) and start the service at [http://localhost:8000](http://localhost:8000).
+Docker will automatically build the image (including downloading and compiling Zeo++) and start the service at `http://localhost:${HOST_PORT}` (default: 9876).
 
 ### Method 2: Local Development (Without Docker)
 

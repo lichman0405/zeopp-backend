@@ -1,44 +1,51 @@
 # Zeo++ API Docker Compose Configuration
 # Updated: 2025-12-31
+# 
+# 使用方法 (Usage):
+#   1. 复制 .env.example 为 .env: cp .env.example .env
+#   2. 根据需要修改 .env 中的配置
+#   3. 启动服务: docker-compose up -d
+#
+# 所有配置项都可以通过 .env 文件修改，无需编辑此文件
 
 services:
   zeopp-api:
-    container_name: zeopp-api
+    container_name: ${CONTAINER_NAME:-zeopp-api}
     build:
       context: .
       dockerfile: Dockerfile
-    image: zeopp-api:0.3.1
+    image: zeopp-api:${IMAGE_TAG:-0.3.1}
     ports:
-      - "9876:8000"
+      - "${HOST_PORT:-9876}:8000"
     environment:
-      - ZEO_EXEC_PATH=/usr/local/bin/network
-      - ENABLE_CACHE=true
-      - LOG_LEVEL=INFO
-      - CORS_ORIGINS=*
-      - RATE_LIMIT_REQUESTS=100
-      - MAX_UPLOAD_SIZE_MB=50
+      - ZEO_EXEC_PATH=${ZEO_EXEC_PATH:-/usr/local/bin/network}
+      - ENABLE_CACHE=${ENABLE_CACHE:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-50}
     volumes:
       - zeopp-workspace:/app/workspace
-    restart: unless-stopped
+    restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: ${HEALTHCHECK_INTERVAL:-30}s
+      timeout: ${HEALTHCHECK_TIMEOUT:-10}s
+      retries: ${HEALTHCHECK_RETRIES:-3}
       start_period: 10s
     deploy:
       resources:
         limits:
-          cpus: '2'
-          memory: 2G
+          cpus: '${CPU_LIMIT:-2}'
+          memory: ${MEMORY_LIMIT:-2G}
         reservations:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '${CPU_RESERVATION:-0.5}'
+          memory: ${MEMORY_RESERVATION:-512M}
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILES:-3}"
 
 volumes:
   zeopp-workspace:

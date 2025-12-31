@@ -62,24 +62,43 @@
 
 #### 创建配置文件
 
-复制 `.env.example`（如不存在请创建）为 `.env` 文件。一般情况下无需修改默认配置。
+复制 `.env.example` 为 `.env` 文件，根据需要修改配置：
+
+```bash
+cp .env.example .env
+```
+
+常用配置项：
 
 ```ini
 # .env
-ZEO_EXEC_PATH=network
-ZEO_WORKSPACE=workspace
+
+# 服务端口（外部访问端口）
+HOST_PORT=9876
+
+# 应用配置
 ENABLE_CACHE=true
+LOG_LEVEL=INFO
+CORS_ORIGINS=*
+RATE_LIMIT_REQUESTS=100
+MAX_UPLOAD_SIZE_MB=50
+
+# 资源限制
+CPU_LIMIT=2
+MEMORY_LIMIT=2G
 ```
+
+> 💡 **提示**：所有配置项都在 `.env.example` 中有详细注释，无需修改 `docker-compose.yml`
 
 #### 一键启动
 
 在项目根目录运行：
 
 ```bash
-docker-compose up --build
+docker-compose up --build -d
 ```
 
-Docker 将自动构建镜像（含 Zeo++ 下载与编译），并启动服务。服务将运行在 [http://localhost:8000](http://localhost:8000)。
+Docker 将自动构建镜像（含 Zeo++ 下载与编译），并启动服务。服务将运行在 `http://localhost:${HOST_PORT}`（默认 9876）。
 
 ### 方式二：本地开发（不使用 Docker）
 
