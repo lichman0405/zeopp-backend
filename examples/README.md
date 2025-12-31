@@ -67,14 +67,40 @@ api_examples.bat
 | `basic_usage.py` | 包含所有 API 端点的调用示例，适合学习 API 用法 |
 | `batch_analysis.py` | 批量处理多个结构文件，支持并发请求，导出 CSV 结果 |
 
-### sample_structures/EDI.cif
+### 示例结构文件
+
+#### sample_structures/EDI.cif
 
 EDI（Edingtonite）沸石结构，晶系为四方晶系，包含 Si 和 O 原子。
 
 结构特征：
 - 晶胞参数: a=b=9.550Å, c=6.520Å
 - 空间群: P-421m
+- 典型孔径: ~3Å
 - 适合测试所有 API 端点
+
+#### sample_structures/HKUST-1.cif
+
+HKUST-1（又称 Cu-BTC、MOF-199）是一种经典的金属有机框架（MOF）材料。
+
+**应用场景：**
+- 🔹 **乙炔 (C₂H₂) 吸附与分离** - HKUST-1 对乙炔有优异的选择性吸附能力
+- 🔹 **CO₂ 捕获** - 开放金属位点增强 CO₂ 吸附
+- 🔹 **H₂ 存储** - 高比表面积有利于氢气存储
+- 🔹 **天然气纯化** - 分离 CH₄ 和杂质气体
+- 🔹 **催化反应** - Cu²⁺ 开放位点可作为催化活性中心
+
+**结构特征：**
+- 化学式: Cu₃(BTC)₂ (BTC = 苯-1,3,5-三羧酸)
+- 晶胞参数: a=b=c=26.343Å（立方晶系）
+- 空间群: Fm-3m
+- BET 比表面积: ~1500-2000 m²/g
+- 孔体积: ~0.75 cm³/g
+- 包含开放金属位点 (Open Metal Sites)
+
+**参考文献：**
+- Chui, S. S.-Y. et al., Science 1999, 283, 1148-1150
+- COD ID: 2300380
 
 ## 注意事项
 
