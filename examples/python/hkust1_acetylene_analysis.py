@@ -67,7 +67,7 @@ def api_request(endpoint: str, params: dict = None) -> AnalysisResult:
                 f"{API_BASE_URL}/api/v1/{endpoint}",
                 files={"structure_file": (STRUCTURE_FILE.name, f)},
                 data=params,
-                timeout=120
+                timeout=300  # 增加超时时间，OMS/PSD 计算可能很耗时
             )
         
         if response.status_code == 200:
@@ -104,7 +104,7 @@ def print_result(label: str, value: Any, unit: str = ""):
 # =============================================================================
 
 def analyze_framework_info():
-    """1. 分析框架基本信息"""
+    ""“1. 分析框架基本信息"""
     print_section("1. 框架基本信息 (Framework Info)")
     
     result = api_request("framework_info", {"ha": "true"})
@@ -113,8 +113,9 @@ def analyze_framework_info():
         data = result.data
         print_result("材料名称", "HKUST-1 (Cu-BTC, MOF-199)")
         print_result("化学式", data.get("formula", "N/A"))
-        print_result("框架数量", data.get("framework_count", "N/A"))
-        print_result("框架密度", data.get("density", "N/A"), "g/cm³")
+        print_result("框架数量", data.get("number_of_frameworks", "N/A"))
+        print_result("分子数量", data.get("number_of_molecules", "N/A"))
+        # 注：密度在 accessible_volume 中获取，不在 framework_info 中
         return data
     else:
         print(f"  ❌ 错误: {result.error}")
@@ -166,7 +167,7 @@ def analyze_surface_area_for_c2h2():
     if result.success:
         data = result.data
         asa_m2_g = data.get("asa_mass", 0)
-        asa_m2_cm3 = data.get("asa_vol", 0)
+        asa_m2_cm3 = data.get("asa_volume", 0)  # 修复: asa_vol -> asa_volume
         nasa_m2_g = data.get("nasa_mass", 0)
         
         print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
@@ -332,7 +333,7 @@ def analyze_pore_size_distribution():
                     "samples": "50000",
                     "ha": "true"
                 },
-                timeout=120
+                timeout=300  # 增加超时时间，PSD 计算可能很耗时
             )
         
         if response.status_code == 200:
