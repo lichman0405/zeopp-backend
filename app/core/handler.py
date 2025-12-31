@@ -28,7 +28,8 @@ async def process_zeo_request(
     output_files: List[str],
     parser: Callable[[str], Dict[str, Any]],
     response_model: Type[BaseModel],
-    task_name: str
+    task_name: str,
+    skip_cache: bool = False
 ) -> Any:
     """
     A generic async function to handle the boilerplate logic for all Zeo++ API requests.
@@ -40,6 +41,7 @@ async def process_zeo_request(
         parser (Callable): The function to parse the main output file.
         response_model (Type[BaseModel]): The Pydantic model for the final response.
         task_name (str): A unique name for the task, used for logging and temp file prefixes.
+        skip_cache (bool): If True, skip cache and force recalculation.
     """
     # Validate file extension
     if not validate_structure_file(structure_file.filename):
@@ -72,7 +74,8 @@ async def process_zeo_request(
         structure_file=input_path,
         zeo_args=final_zeo_args,
         output_files=output_files,
-        extra_identifier=task_name
+        extra_identifier=task_name,
+        skip_cache=skip_cache
     )
 
     if not result["success"]:

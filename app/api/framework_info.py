@@ -19,6 +19,7 @@ router = APIRouter()
 async def get_framework_info(
     structure_file: UploadFile = File(..., description="A structure file (e.g., .cif, .cssr)."),
     ha: bool = Form(True, description="Enable high accuracy mode."),
+    force_recalculate: bool = Form(False, description="Force recalculation, bypassing cache."),
 ):
     """
     Identifies the number of frameworks and their dimensionalities in the structure.
@@ -36,5 +37,6 @@ async def get_framework_info(
         output_files=[output_filename],
         parser=parse_strinfo_from_text,
         response_model=FrameworkInfoResponse,
-        task_name="framework_info"
+        task_name="framework_info",
+        skip_cache=force_recalculate
     )

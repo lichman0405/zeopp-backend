@@ -8,6 +8,7 @@
 
 import sh
 import asyncio
+import functools
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -30,7 +31,8 @@ class ZeoRunner:
         structure_file: Path,
         zeo_args: List[str],
         output_files: List[str],
-        extra_identifier: Optional[str] = None
+        extra_identifier: Optional[str] = None,
+        skip_cache: bool = False
     ) -> Dict:
         """
         Run Zeo++ with given args. Check cache first. If hit, return cached result.
@@ -40,6 +42,7 @@ class ZeoRunner:
             zeo_args (List[str]): command args passed to `network`
             output_files (List[str]): list of expected output filenames
             extra_identifier (str): optional string to distinguish different calls
+            skip_cache (bool): if True, skip cache lookup and force recalculation
 
         Returns:
             Dict: {
@@ -57,7 +60,7 @@ class ZeoRunner:
         cache_key = compute_cache_key(structure_file, zeo_args, extra_identifier)
         cache_dir = get_cache_path(cache_key)
 
-        if ENABLE_CACHE and cache_dir.exists():
+        if ENABLE_CACHE and cache_dir.exists() and not skip_cache:
             logger.info(f"[cache] Cache hit for key: {cache_key}")
             return {
                 "success": True,
@@ -67,6 +70,9 @@ class ZeoRunner:
                 "cached": True,
                 "output_data": {f.name: f.read_text() for f in cache_dir.glob("*")}
             }
+        
+        if skip_cache:
+            logger.info("[cache] Skipping cache (force_recalculate=True)")
 
         logger.info("[cache] Cache miss. Running Zeo++...")
 
@@ -110,7 +116,8 @@ class ZeoRunner:
         structure_file: Path,
         zeo_args: List[str],
         output_files: List[str],
-        extra_identifier: Optional[str] = None
+        extra_identifier: Optional[str] = None,
+        skip_cache: bool = False
     ) -> Dict:
         """
         Async wrapper for run_command. Executes Zeo++ in a thread pool
@@ -118,13 +125,18 @@ class ZeoRunner:
         
         This allows health checks and other requests to be processed
         while a long-running Zeo++ calculation is in progress.
+        
+        Args:
+            skip_cache (bool): If True, skip cache and force recalculation.
         """
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            _executor,
+        # Use functools.partial to pass keyword argument
+        func = functools.partial(
             self.run_command,
             structure_file,
             zeo_args,
             output_files,
-            extra_identifier
+            extra_identifier,
+            skip_cache
         )
+        return await loop.run_in_executor(_executor, func)

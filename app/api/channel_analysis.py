@@ -21,7 +21,8 @@ router = APIRouter()
 async def compute_channel_analysis(
     structure_file: UploadFile = File(..., description="A .cif, .cssr, .v1, or .arc file."),
     probe_radius: float = Form(1.21, description="Radius of the probe molecule in Angstroms."),
-    ha: bool = Form(True, description="Whether to use high accuracy mode (default: True)")
+    ha: bool = Form(True, description="Whether to use high accuracy mode (default: True)"),
+    force_recalculate: bool = Form(False, description="Force recalculation, bypassing cache."),
 ):
     """
     Analyze channel dimensionality using Zeo++ -chan
@@ -42,5 +43,6 @@ async def compute_channel_analysis(
         output_files=[output_filename],
         parser=parse_chan_from_text,
         response_model=ChannelAnalysisResponse,
-        task_name="channel_analysis"
+        task_name="channel_analysis",
+        skip_cache=force_recalculate
     )

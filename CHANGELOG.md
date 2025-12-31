@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Thread pool execution for Zeo++ tasks (`MAX_CONCURRENT_TASKS` env var, default: 4)
   - Async execution prevents event loop blocking during long calculations
   - Health checks remain responsive even during heavy computations
+  - **`force_recalculate` parameter**: Skip cache and force fresh Zeo++ calculation on all endpoints
   
 - **Security Enhancements**:
   - Rate limiting with slowapi (configurable requests per minute)

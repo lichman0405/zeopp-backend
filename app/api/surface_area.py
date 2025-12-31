@@ -24,7 +24,8 @@ async def compute_surface_area(
     chan_radius: float = Form(1.21, description="Channel radius in Angstroms."),
     probe_radius: float = Form(1.21, description="Radius of the probe molecule in Angstroms."),
     samples: int = Form(2000, description="Number of Monte Carlo samples for integration."),
-    ha: bool = Form(True, description="Whether to use high accuracy mode (default: True)")
+    ha: bool = Form(True, description="Whether to use high accuracy mode (default: True)"),
+    force_recalculate: bool = Form(False, description="Force recalculation, bypassing cache."),
 ):
     """
     Calculates the accessible surface area of the framework using a Monte Carlo sampling method.
@@ -56,5 +57,6 @@ async def compute_surface_area(
         output_files=[output_filename],
         parser=parse_sa_from_text,
         response_model=SurfaceAreaResponse,
-        task_name="surface_area"
+        task_name="surface_area",
+        skip_cache=force_recalculate
     )

@@ -102,6 +102,7 @@
 |------|------|------|--------|------|
 | `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 #### 响应格式
 
@@ -151,6 +152,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å)，用于蒙特卡洛采样 |
 | `samples` | integer | ❌ | `2000` | 蒙特卡洛采样点数 |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 > ⚠️ **约束**: `probe_radius` 必须 ≤ `chan_radius`
 
@@ -211,6 +213,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å) |
 | `samples` | integer | ❌ | `50000` | 蒙特卡洛采样点数（推荐 50000） |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 > ⚠️ **约束**: `probe_radius` 必须 ≤ `chan_radius`
 
@@ -279,6 +282,7 @@ curl -X POST "http://localhost:9876/api/v1/accessible_volume" \
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å) |
 | `samples` | integer | ❌ | `50000` | 蒙特卡洛采样点数 |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 > ⚠️ **约束**: `probe_radius` 必须 ≤ `chan_radius`
 
@@ -325,6 +329,7 @@ curl -X POST "http://localhost:9876/api/v1/accessible_volume" \
 | `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å) |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 #### 响应格式
 
@@ -367,6 +372,7 @@ curl -X POST "http://localhost:9876/api/v1/accessible_volume" \
 | `chan_radius` | float | ❌ | `null` | 通道半径 (Å)，默认等于 probe_radius |
 | `samples` | integer | ❌ | `50000` | 蒙特卡洛采样点数 |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 #### 响应格式
 
@@ -400,6 +406,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 | `probe_radius` | float | ❌ | `1.86` | 探针半径 (Å)，默认为甲烷半径 |
 | `samples` | integer | ❌ | `50000` | 蒙特卡洛采样点数 |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 #### 响应格式
 
@@ -441,6 +448,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 |------|------|------|--------|------|
 | `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr) |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 #### 响应格式
 
@@ -491,6 +499,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 |------|------|------|--------|------|
 | `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr) |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
+| `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
 #### 响应格式
 
@@ -625,7 +634,28 @@ zeopp_requests_total 1234
 
 ---
 
-### 6.2 探针半径参考
+### 6.2 强制重新计算 (`force_recalculate`)
+
+| 值 | 描述 |
+|---|---|
+| `false` | 默认值，如果缓存中存在相同结构和参数的结果，直接返回缓存 |
+| `true` | 跳过缓存检查，强制执行 Zeo++ 计算并更新缓存 |
+
+**使用场景**:
+- 当需要确保获取最新计算结果时
+- 调试或测试时需要完整运行 Zeo++
+- 怀疑缓存结果可能不正确时
+
+**示例**:
+```bash
+curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
+  -F "structure_file=@HKUST-1.cif" \
+  -F "force_recalculate=true"
+```
+
+---
+
+### 6.4 探针半径参考
 
 根据研究的分子选择合适的探针半径：
 
@@ -640,7 +670,7 @@ zeopp_requests_total 1234
 
 ---
 
-### 6.3 采样点数建议
+### 6.5 采样点数建议
 
 | 分析类型 | 快速预览 | 生产精度 | 高精度研究 |
 |----------|----------|----------|------------|
@@ -651,7 +681,7 @@ zeopp_requests_total 1234
 
 ---
 
-### 6.4 支持的文件格式
+### 6.6 支持的文件格式
 
 | 扩展名 | 格式 | 描述 |
 |--------|------|------|

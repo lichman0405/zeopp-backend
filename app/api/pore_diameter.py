@@ -21,6 +21,7 @@ router = APIRouter()
 async def compute_pore_diameter(
     structure_file: UploadFile = File(..., description="A .cif, .cssr, .v1, or .arc file."),
     ha: bool = Form(True, description="Enable high accuracy mode."),
+    force_recalculate: bool = Form(False, description="Force recalculation, bypassing cache."),
 ):
     """
     Calculates the largest free sphere (Di) and largest included sphere (Df) 
@@ -37,5 +38,6 @@ async def compute_pore_diameter(
         output_files=[output_filename],
         parser=parse_res_from_text,
         response_model=PoreDiameterResponse,
-        task_name="pore_diameter"
+        task_name="pore_diameter",
+        skip_cache=force_recalculate
     )

@@ -102,6 +102,7 @@
 |-----------|------|----------|---------|-------------|
 | `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 #### Response Format
 
@@ -151,6 +152,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) for Monte Carlo sampling |
 | `samples` | integer | ❌ | `2000` | Number of Monte Carlo samples |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 > ⚠️ **Constraint**: `probe_radius` must be ≤ `chan_radius`
 
@@ -211,6 +213,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) |
 | `samples` | integer | ❌ | `50000` | Number of Monte Carlo samples (recommended: 50000) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 > ⚠️ **Constraint**: `probe_radius` must be ≤ `chan_radius`
 
@@ -267,6 +270,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) |
 | `samples` | integer | ❌ | `50000` | Number of Monte Carlo samples |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 > ⚠️ **Constraint**: `probe_radius` must be ≤ `chan_radius`
 
@@ -313,6 +317,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 | `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 #### Response Format
 
@@ -355,6 +360,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 | `chan_radius` | float | ❌ | `null` | Channel radius (Å), defaults to probe_radius |
 | `samples` | integer | ❌ | `50000` | Number of Monte Carlo samples |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 #### Response Format
 
@@ -388,6 +394,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 | `probe_radius` | float | ❌ | `1.86` | Probe radius (Å), defaults to methane radius |
 | `samples` | integer | ❌ | `50000` | Number of Monte Carlo samples |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 #### Response Format
 
@@ -429,6 +436,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 |-----------|------|----------|---------|-------------|
 | `structure_file` | File | ✅ | - | Structure file (.cif, .cssr) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 #### Response Format
 
@@ -479,6 +487,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 |-----------|------|----------|---------|-------------|
 | `structure_file` | File | ✅ | - | Structure file (.cif, .cssr) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
+| `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
 #### Response Format
 
@@ -613,7 +622,28 @@ zeopp_requests_total 1234
 
 ---
 
-### 6.2 Probe Radius Reference
+### 6.2 Force Recalculate (`force_recalculate`)
+
+| Value | Description |
+|-------|-------------|
+| `false` | Default value, returns cached results if available for the same structure and parameters |
+| `true` | Skip cache check, force Zeo++ calculation and update cache |
+
+**Use Cases**:
+- When you need to ensure fresh calculation results
+- For debugging or testing when full Zeo++ execution is needed
+- When cached results are suspected to be incorrect
+
+**Example**:
+```bash
+curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
+  -F "structure_file=@HKUST-1.cif" \
+  -F "force_recalculate=true"
+```
+
+---
+
+### 6.3 Probe Radius Reference
 
 Choose appropriate probe radius based on the molecule of interest:
 
@@ -628,7 +658,7 @@ Choose appropriate probe radius based on the molecule of interest:
 
 ---
 
-### 6.3 Sample Count Recommendations
+### 6.4 Sample Count Recommendations
 
 | Analysis Type | Quick Preview | Production | High Precision |
 |---------------|---------------|------------|----------------|
@@ -639,7 +669,7 @@ Choose appropriate probe radius based on the molecule of interest:
 
 ---
 
-### 6.4 Supported File Formats
+### 6.5 Supported File Formats
 
 | Extension | Format | Description |
 |-----------|--------|-------------|

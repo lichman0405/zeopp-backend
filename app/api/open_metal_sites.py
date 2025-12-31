@@ -19,6 +19,7 @@ router = APIRouter()
 async def count_open_metal_sites(
     structure_file: UploadFile = File(..., description="A structure file (e.g., .cif, .cssr)."),
     ha: bool = Form(True, description="Enable high accuracy mode."),
+    force_recalculate: bool = Form(False, description="Force recalculation, bypassing cache."),
 ):
     """
     Counts the number of open metal sites in the provided structure.
@@ -36,5 +37,6 @@ async def count_open_metal_sites(
         output_files=[output_filename],
         parser=parse_oms_from_text,
         response_model=OpenMetalSitesResponse,
-        task_name="open_metal_sites"
+        task_name="open_metal_sites",
+        skip_cache=force_recalculate
     )

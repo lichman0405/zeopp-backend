@@ -23,7 +23,8 @@ async def compute_accessible_volume(
     chan_radius: float = Form(1.21, description="Channel radius in Angstroms."),
     probe_radius: float = Form(1.21, description="Radius of the probe molecule in Angstroms."),
     samples: int = Form(50000, description="Number of Monte Carlo samples for integration (recommended: 50000)."),
-    ha: bool = Form(True, description="Whether to use high accuracy mode (default: True)")
+    ha: bool = Form(True, description="Whether to use high accuracy mode (default: True)"),
+    force_recalculate: bool = Form(False, description="Force recalculation, bypassing cache."),
 ):
     """
     Calculates the accessible volume of the framework using a Monte Carlo sampling method.
@@ -53,5 +54,6 @@ async def compute_accessible_volume(
         output_files=[output_filename],
         parser=parse_vol_from_text,
         response_model=AccessibleVolumeResponse,
-        task_name="accessible_volume"
+        task_name="accessible_volume",
+        skip_cache=force_recalculate
     )

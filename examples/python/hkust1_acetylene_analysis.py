@@ -104,7 +104,7 @@ def print_result(label: str, value: Any, unit: str = ""):
 # =============================================================================
 
 def analyze_framework_info():
-    ""“1. 分析框架基本信息"""
+    """1. 分析框架基本信息"""
     print_section("1. 框架基本信息 (Framework Info)")
     
     result = api_request("framework_info", {"ha": "true"})

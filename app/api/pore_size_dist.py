@@ -26,6 +26,7 @@ async def download_pore_size_dist(
     chan_radius: Optional[float] = Form(None, description="Radius for accessibility check. Defaults to probe_radius."),
     samples: int = Form(50000, description="Number of Monte Carlo samples per unit cell for integration."),
     ha: bool = Form(True, description="Enable high accuracy mode."),
+    force_recalculate: bool = Form(False, description="Force recalculation, bypassing cache."),
 ):
     """
     Calculates the pore size distribution and returns the resulting .psd_histo file for download.
@@ -59,17 +60,18 @@ async def download_pore_size_dist(
     final_output_filename = f"{input_path.stem}.psd_histo"
     final_file_path = cache_path / final_output_filename
 
-    if config.ENABLE_CACHE and final_file_path.exists():
+    if config.ENABLE_CACHE and not force_recalculate and final_file_path.exists():
         logger.info(f"[{task_name}] Cache hit. Returning file: {final_file_path}")
         return FileResponse(path=final_file_path, media_type='text/plain', filename=f"{structure_file.filename}.psd_histo")
 
-    logger.info(f"[{task_name}] Cache miss. Running Zeo++...")
+    logger.info(f"[{task_name}] {'Force recalculate requested. ' if force_recalculate else 'Cache miss. '}Running Zeo++...")
 
     result = runner.run_command(
         structure_file=input_path,
         zeo_args=final_runner_args,
         output_files=[final_output_filename],
-        extra_identifier=task_name
+        extra_identifier=task_name,
+        skip_cache=force_recalculate
     )
 
     if not result["success"] or not final_file_path.exists():

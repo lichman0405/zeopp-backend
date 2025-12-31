@@ -21,6 +21,7 @@ async def compute_blocking_spheres(
     probe_radius: float = Form(1.86, description="Radius of the probe molecule in Angstroms."),
     samples: int = Form(50000, description="Number of Monte Carlo samples for integration (recommended: 50000)."),
     ha: bool = Form(True, description="Enable high accuracy mode."),
+    force_recalculate: bool = Form(False, description="Force recalculation, bypassing cache."),
 ):
     """
     Identifies inaccessible regions and generates blocking spheres in RASPA format.
@@ -44,5 +45,6 @@ async def compute_blocking_spheres(
         output_files=[output_filename],
         parser=parse_block_from_text,
         response_model=BlockingSpheresResponse,
-        task_name="blocking_spheres"
+        task_name="blocking_spheres",
+        skip_cache=force_recalculate
     )
