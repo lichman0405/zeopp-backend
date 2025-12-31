@@ -28,11 +28,13 @@ services:
       - zeopp-workspace:/app/workspace
     restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: ${HEALTHCHECK_INTERVAL:-30}s
-      timeout: ${HEALTHCHECK_TIMEOUT:-10}s
-      retries: ${HEALTHCHECK_RETRIES:-3}
-      start_period: 10s
+      # 注意：OMS 等长时间计算任务可能导致服务响应变慢
+      # 增加 timeout 和 retries 以避免误判为 unhealthy
+      test: ["CMD", "curl", "-f", "--max-time", "30", "http://localhost:8000/health"]
+      interval: ${HEALTHCHECK_INTERVAL:-60}s
+      timeout: ${HEALTHCHECK_TIMEOUT:-30}s
+      retries: ${HEALTHCHECK_RETRIES:-5}
+      start_period: 15s
     deploy:
       resources:
         limits:
