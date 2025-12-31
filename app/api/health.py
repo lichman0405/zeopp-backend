@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Author: Shibo Li
 # Date: 2025-12-22
-# Version: 0.3.0
+# Version: 0.3.1
 
 from fastapi import APIRouter, status
 from pydantic import BaseModel
@@ -10,7 +10,7 @@ from datetime import datetime
 import sys
 import sh
 
-from app.core.config import ZEO_EXECUTABLE, WORKSPACE_ROOT, ENABLE_CACHE, LOG_LEVEL
+from app.core.config import ZEO_EXECUTABLE, WORKSPACE_ROOT, ENABLE_CACHE, LOG_LEVEL, settings
 
 router = APIRouter()
 
@@ -56,7 +56,7 @@ async def health_check():
     return HealthCheckResponse(
         status="healthy",
         timestamp=datetime.utcnow().isoformat() + "Z",
-        version="0.3.0"
+        version=settings.version
     )
 
 
@@ -89,7 +89,7 @@ async def detailed_health_check():
     return DetailedHealthResponse(
         status="healthy" if zeopp_available else "degraded",
         timestamp=datetime.utcnow().isoformat() + "Z",
-        version="0.3.0",
+        version=settings.version,
         api_version="v1",
         zeopp_executable=ZEO_EXECUTABLE,
         zeopp_available=zeopp_available,

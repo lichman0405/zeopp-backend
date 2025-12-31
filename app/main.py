@@ -35,9 +35,9 @@ from app.api import (
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
-    title="Zeo++ Analysis API",
+    title=settings.app_name,
     description="A containerized FastAPI service for Zeo++ structure analysis with versioned endpoints",
-    version="0.3.1",
+    version=settings.version,
     docs_url="/docs",
     redoc_url="/redoc"
 )

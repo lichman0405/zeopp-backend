@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**:
   - `docs/ZEO++_REFERENCE.md` - Comprehensive Zeo++ command reference from official documentation
   - `docs/API_MAPPING.md` - API endpoint to Zeo++ command mapping guide
+  - `docs/API_DOCUMENTATION.md` - Complete API documentation in Chinese
+  - `docs/API_DOCUMENTATION_EN.md` - Complete API documentation in English
+
+- **Examples**:
+  - `examples/` directory with comprehensive usage examples
+  - `examples/sample_structures/EDI.cif` - EDI zeolite structure for testing
+  - `examples/sample_structures/HKUST-1.cif` - HKUST-1 MOF structure for gas adsorption studies
+  - `examples/python/basic_usage.py` - Basic API usage examples
+  - `examples/python/batch_analysis.py` - Batch processing script with CSV export
+  - `examples/python/hkust1_acetylene_analysis.py` - Complete case study: MOF acetylene adsorption analysis
+  - `examples/curl/api_examples.sh` - cURL examples for Linux/Mac
+  - `examples/curl/api_examples.bat` - cURL examples for Windows
+
+- **Configuration**:
+  - `.env.example` - Externalized deployment configuration template
+  - All Docker settings now configurable via environment variables
   
 - **Security Enhancements**:
   - Rate limiting with slowapi (configurable requests per minute)

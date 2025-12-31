@@ -17,6 +17,16 @@ class Settings(BaseSettings):
     All settings can be overridden via environment variables or .env file.
     """
     
+    # Application Info
+    app_name: str = Field(
+        default="Zeo++ Backend API",
+        description="Application name"
+    )
+    version: str = Field(
+        default="0.3.1",
+        description="API version"
+    )
+    
     # Zeo++ Configuration
     zeo_exec_path: str = Field(
         default="./network",
