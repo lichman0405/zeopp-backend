@@ -49,6 +49,7 @@ For detailed usage, please refer to the following documentation:
 - [**API 完整接口文档 (中文)**](./docs/API_DOCUMENTATION.md): 所有端点的详细参数和示例
 - [**Zeo++ Reference Guide**](./docs/ZEO++_REFERENCE.md): In-depth Zeo++ command reference
 - [**API Mapping Guide**](./docs/API_MAPPING.md): API to Zeo++ command mapping
+- [**Usage Examples**](./examples/): Python and cURL examples with sample structure files
 
 ## ⚡ Quick Start
 

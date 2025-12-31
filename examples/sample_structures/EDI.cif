@@ -1,0 +1,41 @@
+data_EDI
+_audit_creation_date              2025-01-01
+_audit_creation_method            'Zeo++ API Example'
+
+_cell_length_a                    6.926
+_cell_length_b                    6.926
+_cell_length_c                    6.410
+_cell_angle_alpha                 90.000
+_cell_angle_beta                  90.000
+_cell_angle_gamma                 90.000
+
+_symmetry_space_group_name_H-M    'P 1'
+_symmetry_Int_Tables_number       1
+
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+Si1   Si   0.09970   0.25000   0.37910   1.0000
+Si2   Si   0.75000   0.09970   0.62090   1.0000
+Si3   Si   0.25000   0.90030   0.62090   1.0000
+Si4   Si   0.90030   0.75000   0.37910   1.0000
+Si5   Si   0.90030   0.25000   0.62090   1.0000
+Si6   Si   0.25000   0.90030   0.37910   1.0000
+Si7   Si   0.75000   0.09970   0.37910   1.0000
+Si8   Si   0.09970   0.75000   0.62090   1.0000
+O1    O    0.00000   0.18340   0.50000   1.0000
+O2    O    0.18340   0.00000   0.50000   1.0000
+O3    O    0.00000   0.81660   0.50000   1.0000
+O4    O    0.81660   0.00000   0.50000   1.0000
+O5    O    0.22360   0.22360   0.23910   1.0000
+O6    O    0.77640   0.22360   0.76090   1.0000
+O7    O    0.22360   0.77640   0.76090   1.0000
+O8    O    0.77640   0.77640   0.23910   1.0000
+O9    O    0.13720   0.37500   0.50000   1.0000
+O10   O    0.62500   0.13720   0.50000   1.0000
+O11   O    0.37500   0.86280   0.50000   1.0000
+O12   O    0.86280   0.62500   0.50000   1.0000

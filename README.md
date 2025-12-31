@@ -49,6 +49,7 @@
 - [**API Documentation (English)**](./docs/API_DOCUMENTATION_EN.md)：Complete API reference in English
 - [**Zeo++ 功能参考指南**](./docs/ZEO++_REFERENCE.md)：深入了解底层 Zeo++ 的所有命令、参数含义及物理背景
 - [**API 映射手册**](./docs/API_MAPPING.md)：API 端点与 Zeo++ 命令的对应关系，以及推荐的参数配置
+- [**使用示例**](./examples/)：Python 和 cURL 示例代码，包含示例结构文件
 
 ## ⚡ 快速上手
 
