@@ -2,16 +2,22 @@
 # -*- coding: utf-8 -*-
 # Author: Shibo Li
 # Date: 2025-05-13
+# Updated: 2025-12-31 - Added thread pool async execution for non-blocking operation
 
 # app/core/runner.py
 
 import sh
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import List, Dict, Optional
 
 from app.utils.logger import logger
 from app.utils.file import compute_cache_key, get_cache_path
-from app.core.config import ZEO_EXECUTABLE, WORKSPACE_ROOT, ENABLE_CACHE
+from app.core.config import ZEO_EXECUTABLE, WORKSPACE_ROOT, ENABLE_CACHE, settings
+
+# Thread pool for executing Zeo++ tasks without blocking the event loop
+_executor = ThreadPoolExecutor(max_workers=settings.max_concurrent_tasks)
 
 
 class ZeoRunner:
@@ -98,3 +104,27 @@ class ZeoRunner:
                 "cached": False,
                 "output_data": {}
             }
+
+    async def run_command_async(
+        self,
+        structure_file: Path,
+        zeo_args: List[str],
+        output_files: List[str],
+        extra_identifier: Optional[str] = None
+    ) -> Dict:
+        """
+        Async wrapper for run_command. Executes Zeo++ in a thread pool
+        to avoid blocking the event loop.
+        
+        This allows health checks and other requests to be processed
+        while a long-running Zeo++ calculation is in progress.
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            _executor,
+            self.run_command,
+            structure_file,
+            zeo_args,
+            output_files,
+            extra_identifier
+        )

@@ -90,8 +90,11 @@ USER ${APP_USER}
 EXPOSE 8000
 
 # Health check for container orchestration
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl --fail http://localhost:8000/health || exit 1
+# Increased timeout for long-running Zeo++ calculations
+HEALTHCHECK --interval=60s --timeout=30s --start-period=15s --retries=5 \
+    CMD curl --fail --max-time 30 http://localhost:8000/health || exit 1
 
 # Run application with uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Multiple workers allow health checks to respond while long tasks run
+# UVICORN_WORKERS env var controls the number of worker processes
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}"]

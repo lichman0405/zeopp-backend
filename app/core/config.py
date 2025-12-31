@@ -69,6 +69,16 @@ class Settings(BaseSettings):
         description="Logging level (DEBUG, INFO, WARNING, ERROR)"
     )
     
+    # Performance Configuration
+    uvicorn_workers: int = Field(
+        default=2,
+        description="Number of Uvicorn worker processes"
+    )
+    max_concurrent_tasks: int = Field(
+        default=4,
+        description="Maximum concurrent Zeo++ tasks in thread pool"
+    )
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

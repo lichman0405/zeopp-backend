@@ -24,6 +24,9 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
       - RATE_LIMIT_REQUESTS=${RATE_LIMIT_REQUESTS:-100}
       - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-50}
+      # Performance settings
+      - UVICORN_WORKERS=${UVICORN_WORKERS:-2}
+      - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-4}
     volumes:
       - zeopp-workspace:/app/workspace
     restart: ${RESTART_POLICY:-unless-stopped}

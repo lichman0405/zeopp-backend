@@ -66,7 +66,9 @@ async def process_zeo_request(
 
     logger.info(f"[{task_name}] Running Zeo++ with args: {' '.join(final_zeo_args)}")
     
-    result = runner.run_command(
+    # Use async method to run Zeo++ in thread pool, avoiding event loop blocking
+    # This allows health checks and other requests to be processed during long calculations
+    result = await runner.run_command_async(
         structure_file=input_path,
         zeo_args=final_zeo_args,
         output_files=output_files,

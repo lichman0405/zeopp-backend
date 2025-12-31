@@ -83,7 +83,9 @@ LOG_LEVEL=INFO
 CORS_ORIGINS=*
 RATE_LIMIT_REQUESTS=100
 MAX_UPLOAD_SIZE_MB=50
-
+# Performance configuration
+UVICORN_WORKERS=2           # Worker processes, recommended to set to CPU cores
+MAX_CONCURRENT_TASKS=4      # Maximum concurrent Zeo++ tasks
 # Resource limits
 CPU_LIMIT=2
 MEMORY_LIMIT=2G

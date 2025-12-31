@@ -84,6 +84,10 @@ CORS_ORIGINS=*
 RATE_LIMIT_REQUESTS=100
 MAX_UPLOAD_SIZE_MB=50
 
+# 性能配置
+UVICORN_WORKERS=2           # Worker 进程数，建议设为 CPU 核心数
+MAX_CONCURRENT_TASKS=4      # 最大并发 Zeo++ 任务数
+
 # 资源限制
 CPU_LIMIT=2
 MEMORY_LIMIT=2G

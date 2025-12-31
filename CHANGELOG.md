@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration**:
   - `.env.example` - Externalized deployment configuration template
   - All Docker settings now configurable via environment variables
+
+- **Performance**:
+  - Multi-worker Uvicorn support (`UVICORN_WORKERS` env var, default: 2)
+  - Thread pool execution for Zeo++ tasks (`MAX_CONCURRENT_TASKS` env var, default: 4)
+  - Async execution prevents event loop blocking during long calculations
+  - Health checks remain responsive even during heavy computations
   
 - **Security Enhancements**:
   - Rate limiting with slowapi (configurable requests per minute)
