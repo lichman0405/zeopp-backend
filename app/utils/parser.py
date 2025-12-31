@@ -3,11 +3,37 @@
 # Author: Shibo Li
 # Date: 2025-05-13
 # Updated: 2025-12-22 - Enhanced error handling
+# Updated: 2025-12-31 - Refactored to eliminate code duplication
 
 
 import re
+from typing import List
 from app.core.exceptions import ZeoppParsingError
 from app.utils.logger import logger
+
+
+def _extract_value(key: str, tokens: List[str], default: float = 0.0) -> float:
+    """
+    Extract a float value following a key from a list of tokens.
+    
+    Args:
+        key: The key to search for (e.g., "Unitcell_volume:")
+        tokens: List of string tokens to search in
+        default: Default value to return if extraction fails
+    
+    Returns:
+        The extracted float value, or default if not found/invalid
+    """
+    try:
+        idx = tokens.index(key)
+        return float(tokens[idx + 1])
+    except ValueError as e:
+        logger.warning(f"Failed to convert '{key}' value to float: {e}")
+        return default
+    except IndexError:
+        logger.warning(f"Key '{key}' not found in tokens or missing value after key")
+        return default
+
 
 def parse_vol_from_text(text: str) -> dict:
     """
@@ -38,28 +64,18 @@ def parse_vol_from_text(text: str) -> dict:
     tokens1 = lines[0].split()
     tokens2 = lines[1].split()
 
-    def extract(name: str, tokens: list[str]) -> float:
-        try:
-            return float(tokens[tokens.index(name) + 1])
-        except ValueError as e:
-            logger.warning(f"Failed to convert '{name}' value to float: {e}")
-            return 0.0
-        except IndexError:
-            logger.warning(f"Key '{name}' not found in tokens")
-            return 0.0
-
     return {
-        "unitcell_volume": extract("Unitcell_volume:", tokens1),
-        "density": extract("Density:", tokens1),
+        "unitcell_volume": _extract_value("Unitcell_volume:", tokens1),
+        "density": _extract_value("Density:", tokens1),
         "av": {
-            "unitcell": extract("AV_A^3:", tokens1),
-            "fraction": extract("AV_Volume_fraction:", tokens1),
-            "mass": extract("AV_cm^3/g:", tokens1),
+            "unitcell": _extract_value("AV_A^3:", tokens1),
+            "fraction": _extract_value("AV_Volume_fraction:", tokens1),
+            "mass": _extract_value("AV_cm^3/g:", tokens1),
         },
         "nav": {
-            "unitcell": extract("NAV_A^3:", tokens2),
-            "fraction": extract("NAV_Volume_fraction:", tokens2),
-            "mass": extract("NAV_cm^3/g:", tokens2),
+            "unitcell": _extract_value("NAV_A^3:", tokens2),
+            "fraction": _extract_value("NAV_Volume_fraction:", tokens2),
+            "mass": _extract_value("NAV_cm^3/g:", tokens2),
         }
     }
 
@@ -159,23 +175,13 @@ def parse_sa_from_text(text: str) -> dict:
     tokens1 = lines[0].split()
     tokens2 = lines[1].split()
 
-    def extract(name: str, tokens: list[str]) -> float:
-        try:
-            return float(tokens[tokens.index(name) + 1])
-        except ValueError as e:
-            logger.warning(f"Failed to convert '{name}' value to float: {e}")
-            return 0.0
-        except IndexError:
-            logger.warning(f"Key '{name}' not found in tokens")
-            return 0.0
-
     return {
-        "asa_unitcell": extract("ASA_A^2:", tokens1),
-        "asa_volume": extract("ASA_m^2/cm^3:", tokens1),
-        "asa_mass": extract("ASA_m^2/g:", tokens1),
-        "nasa_unitcell": extract("NASA_A^2:", tokens2),
-        "nasa_volume": extract("NASA_m^2/cm^3:", tokens2),
-        "nasa_mass": extract("NASA_m^2/g:", tokens2),
+        "asa_unitcell": _extract_value("ASA_A^2:", tokens1),
+        "asa_volume": _extract_value("ASA_m^2/cm^3:", tokens1),
+        "asa_mass": _extract_value("ASA_m^2/g:", tokens1),
+        "nasa_unitcell": _extract_value("NASA_A^2:", tokens2),
+        "nasa_volume": _extract_value("NASA_m^2/cm^3:", tokens2),
+        "nasa_mass": _extract_value("NASA_m^2/g:", tokens2),
     }
 
 
@@ -201,23 +207,13 @@ def parse_volpo_from_text(text: str) -> dict:
     tokens1 = lines[0].split()
     tokens2 = lines[1].split()
 
-    def extract(key: str, tokens: list[str]) -> float:
-        try:
-            return float(tokens[tokens.index(key) + 1])
-        except ValueError as e:
-            logger.warning(f"Failed to convert '{key}' value to float: {e}")
-            return 0.0
-        except IndexError:
-            logger.warning(f"Key '{key}' not found in tokens")
-            return 0.0
-
     return {
-        "poav_unitcell": extract("POAV_A^3:", tokens1),
-        "poav_fraction": extract("POAV_Volume_fraction:", tokens1),
-        "poav_mass": extract("POAV_cm^3/g:", tokens1),
-        "ponav_unitcell": extract("PONAV_A^3:", tokens2),
-        "ponav_fraction": extract("PONAV_Volume_fraction:", tokens2),
-        "ponav_mass": extract("PONAV_cm^3/g:", tokens2),
+        "poav_unitcell": _extract_value("POAV_A^3:", tokens1),
+        "poav_fraction": _extract_value("POAV_Volume_fraction:", tokens1),
+        "poav_mass": _extract_value("POAV_cm^3/g:", tokens1),
+        "ponav_unitcell": _extract_value("PONAV_A^3:", tokens2),
+        "ponav_fraction": _extract_value("PONAV_Volume_fraction:", tokens2),
+        "ponav_mass": _extract_value("PONAV_cm^3/g:", tokens2),
     }
 
 

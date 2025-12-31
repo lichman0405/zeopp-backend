@@ -1,17 +1,45 @@
+# Zeo++ API Docker Compose Configuration
+# Updated: 2025-12-31
+
 services:
   zeopp-api:
     container_name: zeopp-api
     build:
       context: .
       dockerfile: Dockerfile
+    image: zeopp-api:0.3.1
     ports:
       - "9876:8000"
     environment:
       - ZEO_EXEC_PATH=/usr/local/bin/network
       - ENABLE_CACHE=true
-      - LOG_LEVEL=DEBUG
+      - LOG_LEVEL=INFO
+      - CORS_ORIGINS=*
+      - RATE_LIMIT_REQUESTS=100
+      - MAX_UPLOAD_SIZE_MB=50
     volumes:
-      - ./workspace:/app/workspace  
-      - ./app:/app/app              
-      - ./.env:/app/.env            
+      - zeopp-workspace:/app/workspace
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  zeopp-workspace:
+    driver: local

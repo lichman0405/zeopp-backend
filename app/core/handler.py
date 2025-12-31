@@ -1,8 +1,9 @@
 # The module is to provide a common functions for all apis of calculation.
 # Author: Shibo Li
-# Date:2025-06-16
+# Date: 2025-06-16
 # Updated: 2025-12-22 - Enhanced error handling
-# Version: 0.3.0
+# Updated: 2025-12-31 - Added automatic temp file cleanup, file validation
+# Version: 0.3.1
 
 
 from fastapi import UploadFile, HTTPException, status
@@ -10,8 +11,11 @@ from typing import List, Callable, Dict, Any, Type
 from pydantic import BaseModel
 
 from app.core.runner import ZeoRunner
+from app.core.config import settings
 from app.core.exceptions import ZeoppParsingError, ZeoppOutputNotFoundError, ZeoppExecutionError
+from app.core.middleware import validate_structure_file, get_allowed_extensions_str
 from app.utils.file import save_uploaded_file
+from app.utils.cleanup import cleanup_temp_directory
 from app.utils.logger import logger
 
 # Create a singleton instance of ZeoRunner
@@ -37,6 +41,20 @@ async def process_zeo_request(
         response_model (Type[BaseModel]): The Pydantic model for the final response.
         task_name (str): A unique name for the task, used for logging and temp file prefixes.
     """
+    # Validate file extension
+    if not validate_structure_file(structure_file.filename):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid file type. Allowed extensions: {get_allowed_extensions_str()}"
+        )
+    
+    # Check file size (if available)
+    if structure_file.size and structure_file.size > settings.max_upload_size_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large. Maximum size: {settings.max_upload_size_mb}MB"
+        )
+    
     logger.info(f"[{task_name}] Received new request. Saving file...")
     
     input_path = save_uploaded_file(structure_file, prefix=task_name)
@@ -98,5 +116,9 @@ async def process_zeo_request(
     final_data = {**parsed_data, "cached": result["cached"]}
     logger.success(f"[{task_name}] Task completed successfully.")
     logger.display_data_as_table(final_data, f"Result for {task_name}")
+    
+    # Clean up temporary files after successful processing (only if not cached)
+    if not result["cached"]:
+        cleanup_temp_directory(input_path.parent)
     
     return response_model(**final_data)

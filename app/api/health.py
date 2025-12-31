@@ -7,9 +7,7 @@
 from fastapi import APIRouter, status
 from pydantic import BaseModel
 from datetime import datetime
-from pathlib import Path
 import sys
-import os
 import sh
 
 from app.core.config import ZEO_EXECUTABLE, WORKSPACE_ROOT, ENABLE_CACHE, LOG_LEVEL

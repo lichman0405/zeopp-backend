@@ -62,11 +62,11 @@ class ZeoRunner:
                 "output_data": {f.name: f.read_text() for f in cache_dir.glob("*")}
             }
 
-        logger.info(f"[cache] Cache miss. Running Zeo++...")
+        logger.info("[cache] Cache miss. Running Zeo++...")
 
         try:
             result = sh.Command(self.zeo_exec)(*zeo_args, _cwd=str(structure_file.parent), _err_to_out=True)
-            logger.info(f"[zeo++] Execution completed.")
+            logger.info("[zeo++] Execution completed.")
 
             if ENABLE_CACHE:
                 cache_dir.mkdir(parents=True, exist_ok=True)

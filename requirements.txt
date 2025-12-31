@@ -1,8 +1,23 @@
-fastapi>=0.95.0
-uvicorn[standard]>=0.23.0
-python-multipart>=0.0.6
-sh>=1.14.3
-rich>=13.3.5
-python-dotenv>=1.0.0
-pydantic
-python-dotenv
+# Zeo++ API Service Dependencies
+# Production Dependencies
+
+# Web Framework
+fastapi>=0.95.0,<1.0.0
+uvicorn[standard]>=0.23.0,<1.0.0
+python-multipart>=0.0.6,<1.0.0
+
+# Pydantic for data validation and settings
+pydantic>=2.0.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+
+# Shell command execution
+sh>=2.0.0,<3.0.0
+
+# Logging and console output
+rich>=13.3.5,<14.0.0
+
+# Environment variables
+python-dotenv>=1.0.0,<2.0.0
+
+# Rate limiting (for API security)
+slowapi>=0.1.9,<1.0.0

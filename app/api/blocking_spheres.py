@@ -19,7 +19,7 @@ router = APIRouter()
 async def compute_blocking_spheres(
     structure_file: UploadFile = File(..., description="A .cif, .cssr, .v1, or .arc file."),
     probe_radius: float = Form(1.86, description="Radius of the probe molecule in Angstroms."),
-    samples: int = Form(100, description="Number of Monte Carlo samples for integration."),
+    samples: int = Form(50000, description="Number of Monte Carlo samples for integration (recommended: 50000)."),
     ha: bool = Form(True, description="Enable high accuracy mode."),
 ):
     """

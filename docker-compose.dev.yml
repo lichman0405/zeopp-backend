@@ -1,0 +1,23 @@
+# Zeo++ API Docker Compose - Development Configuration
+# Updated: 2025-12-31
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  zeopp-api:
+    # Override production settings for development
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENABLE_CACHE=false
+    volumes:
+      # Mount source code for hot-reloading
+      - ./app:/app/app:ro
+      - ./workspace:/app/workspace
+      - ./.env:/app/.env:ro
+    # Use uvicorn with reload for development
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    # Remove resource limits for development
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
