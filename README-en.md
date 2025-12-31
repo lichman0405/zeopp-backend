@@ -41,6 +41,15 @@ This project addresses the pain points of using Zeo++ directly: it transforms co
 - 📊 **Observability**: Prometheus metrics endpoint for monitoring
 - 🧪 **Test Coverage**: Comprehensive unit and integration test suite
 
+## 📚 Documentation
+
+For detailed usage, please refer to the following documentation:
+
+- [**API Documentation (English)**](./docs/API_DOCUMENTATION_EN.md): Complete API reference with parameters, examples
+- [**API 完整接口文档 (中文)**](./docs/API_DOCUMENTATION.md): 所有端点的详细参数和示例
+- [**Zeo++ Reference Guide**](./docs/ZEO++_REFERENCE.md): In-depth Zeo++ command reference
+- [**API Mapping Guide**](./docs/API_MAPPING.md): API to Zeo++ command mapping
+
 ## ⚡ Quick Start
 
 ### Requirements
