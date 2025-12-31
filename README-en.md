@@ -31,12 +31,15 @@ This project addresses the pain points of using Zeo++ directly: it transforms co
 
 ## 🚀 Key Features
 
-- ✅ **Modern API**: Access Zeo++ core analysis functions via HTTP endpoints.
-- 🧠 **Smart Caching**: Automatically cache computation results for identical inputs, returning results instantly to avoid redundant calculations.
-- 📂 **Structured Output**: Responses are returned in clear, easy-to-process JSON format.
-- ⚙️ **Flexible Configuration**: Easily configure Zeo++ path and working directory via a `.env` file.
-- 🐳 **Docker Ready**: Use Docker and docker-compose to launch the service with one command; automatically handles Zeo++ download and compilation.
-- 🎨 **Rich Logging**: Beautiful and informative console logs for easy debugging and monitoring.
+- ✅ **Modern API**: Access Zeo++ core analysis functions via HTTP endpoints
+- 🧠 **Smart Caching**: Automatically cache computation results, instant response for identical inputs
+- 📂 **Structured Output**: Clear, easy-to-process JSON responses
+- ⚙️ **Type-Safe Configuration**: Pydantic Settings for validated environment configuration
+- 🐳 **Docker Ready**: Multi-stage build with automatic Zeo++ compilation
+- 🎨 **Rich Logging**: Beautiful and informative console logs
+- 🔒 **Security Hardened**: Rate limiting, file validation, request tracking
+- 📊 **Observability**: Prometheus metrics endpoint for monitoring
+- 🧪 **Test Coverage**: Comprehensive unit and integration test suite
 
 ## ⚡ Quick Start
 
@@ -138,6 +141,11 @@ Visit the Swagger UI for interactive testing: [http://localhost:9876/docs](http:
 | `/health` | Basic health check to verify the service is running |
 | `/health/detailed` | Detailed health check with system information and Zeo++ availability |
 | `/version` | Get API version information |
+| `/metrics` | Prometheus metrics endpoint for monitoring systems |
+| `/api/v1/metrics/summary` | JSON format metrics summary |
+| `/api/v1/cache/stats` | Cache statistics |
+| `/api/v1/cache/cleanup` | Clean up old temporary files |
+| `/api/v1/cache/clear` | Clear all cache |
 
 ### Core Geometry Analysis (v1 API)
 
@@ -162,13 +170,33 @@ All endpoints require a `structure_file` uploaded as a file.
 
 ## 🔄 Version Information
 
-**Current Version: v0.3.0**
+**Current Version: v0.3.1**
 
-### New Features (v0.3.0)
-- ✅ API Versioning: All analysis endpoints now use `/api/v1/` prefix
+### New Features (v0.3.1)
+- 🔒 **Security Enhancements**: Rate limiting (slowapi), file upload validation, request ID tracking
+- 📊 **Prometheus Monitoring**: `/metrics` endpoint for monitoring system scraping
+- 🗂️ **Cache Management API**: View stats, cleanup temp files, clear cache
+- 🧪 **Test Suite**: Complete pytest unit tests and API integration tests
+- 🐳 **Docker Optimization**: Multi-stage build, non-root user, health checks
+- 📝 **Complete Documentation**: Zeo++ command reference and API mapping guide
+
+### v0.3.0 Features
+- ✅ API Versioning: All analysis endpoints use `/api/v1/` prefix
 - ✅ Health Check Endpoints: `/health` and `/health/detailed`
 - ✅ Improved Error Handling: Custom exception types with detailed error messages
-- ✅ Version Information Endpoint: `/version`
+
+## 🧪 Development & Testing
+
+### Run Tests
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+### Development Mode
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+```
 
 ## 📜 License
 
