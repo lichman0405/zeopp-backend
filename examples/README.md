@@ -6,16 +6,18 @@
 
 ```
 examples/
-├── README.md               # 本文件
-├── sample_structures/      # 示例结构文件
-│   └── EDI.cif            # EDI 沸石结构
-├── python/                 # Python 示例
-│   ├── basic_usage.py     # 基础 API 调用
-│   ├── batch_analysis.py  # 批量分析脚本
-│   └── requirements.txt   # Python 依赖
-└── curl/                   # cURL 示例
-    ├── api_examples.sh    # Linux/Mac 脚本
-    └── api_examples.bat   # Windows 批处理
+├── README.md                         # 本文件
+├── sample_structures/                # 示例结构文件
+│   ├── EDI.cif                      # EDI 沸石结构
+│   └── HKUST-1.cif                  # HKUST-1 MOF 结构
+├── python/                           # Python 示例
+│   ├── basic_usage.py               # 基础 API 调用
+│   ├── batch_analysis.py            # 批量分析脚本
+│   ├── hkust1_acetylene_analysis.py # ⭐ MOF 乙炔吸附案例
+│   └── requirements.txt             # Python 依赖
+└── curl/                             # cURL 示例
+    ├── api_examples.sh              # Linux/Mac 脚本
+    └── api_examples.bat             # Windows 批处理
 ```
 
 ## 快速开始
@@ -66,6 +68,51 @@ api_examples.bat
 |------|------|
 | `basic_usage.py` | 包含所有 API 端点的调用示例，适合学习 API 用法 |
 | `batch_analysis.py` | 批量处理多个结构文件，支持并发请求，导出 CSV 结果 |
+| `hkust1_acetylene_analysis.py` | ⭐ **完整案例**：用 HKUST-1 MOF 分析乙炔吸附性能 |
+
+### ⭐ 重点案例：HKUST-1 乙炔吸附分析
+
+`python/hkust1_acetylene_analysis.py` 是一个完整的应用案例，演示如何使用 Zeo++ API 分析 MOF 材料对乙炔 (C₂H₂) 的吸附性能。
+
+**运行方式：**
+```bash
+cd examples/python
+python hkust1_acetylene_analysis.py
+```
+
+**案例涵盖的 API 功能：**
+1. `/api/v1/framework_info` - 获取框架基本信息
+2. `/api/v1/pore_diameter` - 分析孔径，判断乙炔可及性
+3. `/api/v1/surface_area` - 计算乙炔可及表面积（探针半径 1.65Å）
+4. `/api/v1/surface_area` - 计算氮气可及表面积（对比 BET）
+5. `/api/v1/accessible_volume` - 计算乙炔可及体积，估算吸附量
+6. `/api/v1/channel_analysis` - 分析通道维度和连通性
+7. `/api/v1/open_metal_sites` - 检测开放金属位点 (Cu²⁺)
+8. `/api/v1/pore_size_dist` - 分析孔径分布
+9. `/api/v1/blocking_spheres` - 检测阻塞区域
+
+**输出示例：**
+```
+╔══════════════════════════════════════════════════════════════════════╗
+║     HKUST-1 MOF 乙炔 (C₂H₂) 吸附性能分析                              ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+======================================================================
+  1. 框架基本信息 (Framework Info)
+======================================================================
+  材料名称: HKUST-1 (Cu-BTC, MOF-199)
+  化学式: C18 H6 Cu3 O12
+  ...
+
+======================================================================
+  5. 乙炔可及体积 (C2H2 Accessible Volume)
+======================================================================
+  探针半径 (C2H2): 1.65 Å
+  C2H2 可及体积: 0.75 cm³/g
+  
+  📊 乙炔吸附能力估算 (理论最大值):
+     估算吸附量: 200 cc(STP)/g
+```
 
 ### 示例结构文件
 
