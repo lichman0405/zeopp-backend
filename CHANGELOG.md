@@ -76,6 +76,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added version bounds for stability
 
 ### Fixed
+- Docker workspace directory permissions issue (container now creates tmp/cache directories during build)
+- Removed `.env` file COPY from Dockerfile (use environment variables or volume mount instead)
+- `pore_size_dist` endpoint path in example script (correct path is `/api/v1/pore_size_dist/download`)
 - Removed duplicate `python-dotenv` from requirements.txt
 - Parser functions now use shared helper to reduce code duplication
 - Temporary files are now automatically cleaned up after processing

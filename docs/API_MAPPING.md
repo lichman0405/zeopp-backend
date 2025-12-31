@@ -13,7 +13,7 @@
 | `/api/v1/accessible_volume` | `-vol` | 计算可达体积 (AV) | `num_samples=50000`, `ha=true` |
 | `/api/v1/probe_volume` | `-volpo` | 计算探针占据体积 (POAV) | `num_samples=50000`, `ha=true` |
 | `/api/v1/channel_analysis` | `-chan` | 识别通道系统及其维度 | `ha=true` |
-| `/api/v1/pore_size_dist` | `-psd` | 计算孔径分布直方图 | `num_samples=50000`, `ha=true` |
+| `/api/v1/pore_size_dist/download` | `-psd` | 计算孔径分布直方图（返回文件） | `num_samples=50000`, `ha=true` |
 | `/api/v1/blocking_spheres` | `-block` | 生成用于模拟的阻塞球 | `num_samples=50000`, `ha=true` |
 | `/api/v1/framework_info` | `-strinfo` | 获取框架维度和结构信息 | - |
 | `/api/v1/open_metal_sites` | `-oms` | 自动检测开放金属位点 | - |

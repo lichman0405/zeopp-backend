@@ -88,7 +88,7 @@ python hkust1_acetylene_analysis.py
 5. `/api/v1/accessible_volume` - 计算乙炔可及体积，估算吸附量
 6. `/api/v1/channel_analysis` - 分析通道维度和连通性
 7. `/api/v1/open_metal_sites` - 检测开放金属位点 (Cu²⁺)
-8. `/api/v1/pore_size_dist` - 分析孔径分布
+8. `/api/v1/pore_size_dist/download` - 分析孔径分布（返回文件）
 9. `/api/v1/blocking_spheres` - 检测阻塞区域
 
 **输出示例：**
