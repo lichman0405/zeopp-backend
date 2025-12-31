@@ -32,7 +32,7 @@ This project addresses the pain points of using Zeo++ directly: it transforms co
 ## 🚀 Key Features
 
 - ✅ **Modern API**: Access Zeo++ core analysis functions via HTTP endpoints
-- 🧠 **Smart Caching**: Automatically cache computation results, instant response for identical inputs
+- 🧠 **Smart Caching**: Automatically cache computation results, instant response for identical inputs (with `force_recalculate` option)
 - 📂 **Structured Output**: Clear, easy-to-process JSON responses
 - ⚙️ **Type-Safe Configuration**: Pydantic Settings for validated environment configuration
 - 🐳 **Docker Ready**: Multi-stage build with automatic Zeo++ compilation

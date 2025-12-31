@@ -199,3 +199,38 @@ class TestChannelAnalysisEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert "dimension" in data
+
+
+class TestForceRecalculate:
+    """Test cases for force_recalculate parameter."""
+
+    @pytest.mark.skip(reason="Requires Zeo++ binary - run on Linux server")
+    def test_force_recalculate_skips_cache(self, client, temp_cif_file):
+        """Test that force_recalculate=true skips cache."""
+        with open(temp_cif_file, "rb") as f:
+            files = {"structure_file": ("test.cif", f, "application/octet-stream")}
+            data = {"force_recalculate": "true"}
+            response = client.post("/api/v1/pore_diameter", files=files, data=data)
+        
+        assert response.status_code == 200
+        result = response.json()
+        # When force_recalculate=true, cached should be False
+        assert result.get("cached") == False
+
+    @pytest.mark.skip(reason="Requires Zeo++ binary - run on Linux server")
+    def test_cache_returns_cached_true(self, client, temp_cif_file):
+        """Test that second request returns cached=true."""
+        # First request
+        with open(temp_cif_file, "rb") as f:
+            files = {"structure_file": ("test.cif", f, "application/octet-stream")}
+            response1 = client.post("/api/v1/pore_diameter", files=files)
+        
+        # Second request (should be cached)
+        with open(temp_cif_file, "rb") as f:
+            files = {"structure_file": ("test.cif", f, "application/octet-stream")}
+            response2 = client.post("/api/v1/pore_diameter", files=files)
+        
+        assert response1.status_code == 200
+        assert response2.status_code == 200
+        result2 = response2.json()
+        assert result2.get("cached") == True

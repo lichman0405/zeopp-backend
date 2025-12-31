@@ -71,16 +71,17 @@ curl -s -X POST "${API_BASE}/api/v1/framework_info" \
     | python -m json.tool
 echo ""
 
-# 7. 孔径分布
-echo "7. 孔径分布 (Pore Size Distribution)"
+# 7. 孔径分布 (下载文件)
+echo "7. 孔径分布 (Pore Size Distribution - File Download)"
 echo "-------------------------------------------"
-curl -s -X POST "${API_BASE}/api/v1/pore_size_dist" \
+curl -s -X POST "${API_BASE}/api/v1/pore_size_dist/download" \
     -F "structure_file=@${SAMPLE_FILE}" \
     -F "chan_radius=1.82" \
     -F "probe_radius=1.82" \
     -F "samples=50000" \
     -F "ha=true" \
-    | python -m json.tool
+    -o psd_result.txt
+echo "已保存到 psd_result.txt"
 echo ""
 
 # 8. 探测体积
@@ -116,3 +117,14 @@ echo ""
 echo "=============================================="
 echo "所有示例执行完成"
 echo "=============================================="
+
+# 额外示例: 强制重新计算 (跳过缓存)
+echo ""
+echo "=============================================="
+echo "额外示例: 强制重新计算 (force_recalculate=true)"
+echo "=============================================="
+echo "此参数可跳过缓存，强制执行 Zeo++ 计算:"
+echo 'curl -X POST "${API_BASE}/api/v1/pore_diameter" \'
+echo '    -F "structure_file=@structure.cif" \'
+echo '    -F "force_recalculate=true"'
+echo ""

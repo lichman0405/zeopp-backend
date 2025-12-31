@@ -35,7 +35,7 @@ def check_health():
     print()
 
 
-def calculate_pore_diameter(file_path: Path):
+def calculate_pore_diameter(file_path: Path, force_recalculate: bool = False):
     """计算孔径 (Pore Diameter)"""
     print("=" * 60)
     print("2. 孔径计算 (Pore Diameter)")
@@ -44,6 +44,11 @@ def calculate_pore_diameter(file_path: Path):
     with open(file_path, "rb") as f:
         files = {"structure_file": (file_path.name, f)}
         data = {"ha": "true"}
+        
+        # 添加 force_recalculate 参数（可选）
+        if force_recalculate:
+            data["force_recalculate"] = "true"
+            print("⚡ 强制重新计算模式 (跳过缓存)")
         
         response = requests.post(
             f"{API_BASE_URL}/api/v1/pore_diameter",
@@ -211,6 +216,15 @@ if __name__ == "__main__":
     # 运行完整分析
     try:
         full_analysis(SAMPLE_FILE)
+        
+        # 演示 force_recalculate 参数
+        print("=" * 60)
+        print("额外示例: 强制重新计算 (force_recalculate)")
+        print("=" * 60)
+        print("使用 force_recalculate=True 可以跳过缓存，强制执行 Zeo++ 计算：")
+        print()
+        calculate_pore_diameter(SAMPLE_FILE, force_recalculate=True)
+        
     except requests.exceptions.ConnectionError:
         print(f"错误: 无法连接到 API 服务 {API_BASE_URL}")
         print("请确保 Zeo++ API 服务已启动:")
