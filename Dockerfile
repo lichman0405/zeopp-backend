@@ -77,10 +77,11 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copy application code
 COPY --chown=${APP_USER}:${APP_GROUP} app ./app
-COPY --chown=${APP_USER}:${APP_GROUP} .env .env
 
 # Create workspace directory with proper permissions
-RUN mkdir -p ./workspace && chown -R ${APP_USER}:${APP_GROUP} ./workspace
+# The workspace is also mapped as a Docker volume for persistence
+RUN mkdir -p ./workspace/tmp ./workspace/cache && \
+    chown -R ${APP_USER}:${APP_GROUP} ./workspace
 
 # Switch to non-root user
 USER ${APP_USER}

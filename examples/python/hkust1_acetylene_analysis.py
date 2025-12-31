@@ -32,7 +32,7 @@ from typing import Optional, Dict, Any
 # 配置参数
 # =============================================================================
 
-API_BASE_URL = "http://localhost:9876"
+API_BASE_URL = "http://192.168.100.207:9876"
 
 # 乙炔 (C2H2) 分子参数
 C2H2_KINETIC_DIAMETER = 3.3  # Å
@@ -317,47 +317,75 @@ def analyze_pore_size_distribution():
     """8. 分析孔径分布"""
     print_section("8. 孔径分布 (Pore Size Distribution)")
     
-    result = api_request("pore_size_dist", {
-        "chan_radius": str(C2H2_PROBE_RADIUS),
-        "probe_radius": str(C2H2_PROBE_RADIUS),
-        "samples": "50000",
-        "ha": "true"
-    })
+    # 注意：pore_size_dist/download 返回的是文件，需要特殊处理
+    print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
+    print()
     
-    if result.success:
-        data = result.data
-        histogram = data.get("histogram", [])
+    try:
+        with open(STRUCTURE_FILE, "rb") as f:
+            response = requests.post(
+                f"{API_BASE_URL}/api/v1/pore_size_dist/download",
+                files={"structure_file": (STRUCTURE_FILE.name, f)},
+                data={
+                    "chan_radius": str(C2H2_PROBE_RADIUS),
+                    "probe_radius": str(C2H2_PROBE_RADIUS),
+                    "samples": "50000",
+                    "ha": "true"
+                },
+                timeout=120
+            )
         
-        print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
-        print()
-        
-        if histogram:
-            # 分析孔径分布
-            total_count = sum(h.get("count", 0) for h in histogram)
+        if response.status_code == 200:
+            # 解析返回的直方图文件内容
+            content = response.text
+            lines = content.strip().split('\n')
             
-            # 分类统计
-            micropore = sum(h.get("count", 0) for h in histogram 
-                           if h.get("diameter", 0) < 20)  # < 2 nm
-            mesopore = sum(h.get("count", 0) for h in histogram 
-                          if 20 <= h.get("diameter", 0) < 500)  # 2-50 nm
+            # 解析直方图数据 (跳过注释行)
+            histogram = []
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                parts = line.split()
+                if len(parts) >= 2:
+                    try:
+                        diameter = float(parts[0])
+                        count = float(parts[1])
+                        histogram.append({"diameter": diameter, "count": count})
+                    except ValueError:
+                        continue
             
-            micropore_pct = micropore / total_count * 100 if total_count > 0 else 0
-            mesopore_pct = mesopore / total_count * 100 if total_count > 0 else 0
-            
-            print(f"  孔径分布统计 (共 {len(histogram)} 个数据点):")
-            print_result("     微孔占比 (<2nm)", f"{micropore_pct:.1f}", "%")
-            print_result("     介孔占比 (2-50nm)", f"{mesopore_pct:.1f}", "%")
-            
-            # 找主要孔径
             if histogram:
-                max_bin = max(histogram, key=lambda x: x.get("count", 0))
-                print_result("     主要孔径范围", f"{max_bin.get('diameter', 0):.2f}", "Å")
+                total_count = sum(h["count"] for h in histogram)
+                
+                # 分类统计 (直径单位是 Å)
+                micropore = sum(h["count"] for h in histogram if h["diameter"] < 20)
+                mesopore = sum(h["count"] for h in histogram if 20 <= h["diameter"] < 500)
+                
+                micropore_pct = micropore / total_count * 100 if total_count > 0 else 0
+                mesopore_pct = mesopore / total_count * 100 if total_count > 0 else 0
+                
+                print(f"  孔径分布统计 (共 {len(histogram)} 个数据点):")
+                print_result("     微孔占比 (<2nm)", f"{micropore_pct:.1f}", "%")
+                print_result("     介孔占比 (2-50nm)", f"{mesopore_pct:.1f}", "%")
+                
+                # 找主要孔径
+                max_bin = max(histogram, key=lambda x: x["count"])
+                print_result("     主要孔径范围", f"{max_bin['diameter']:.2f}", "Å")
+                
+                return {"histogram": histogram}
+            else:
+                print("  ⚠️ 未能解析孔径分布数据")
+                return None
         else:
-            print("  未获取到孔径分布数据")
-        
-        return data
-    else:
-        print(f"  ❌ 错误: {result.error}")
+            print(f"  ❌ 错误: HTTP {response.status_code}: {response.text[:200]}")
+            return None
+            
+    except requests.exceptions.ConnectionError:
+        print(f"  ❌ 无法连接到 {API_BASE_URL}")
+        return None
+    except Exception as e:
+        print(f"  ❌ 错误: {str(e)}")
         return None
 
 
