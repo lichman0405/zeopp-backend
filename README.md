@@ -69,6 +69,12 @@
 cp .env.example .env
 ```
 
+Windows PowerShell 可使用：
+
+```powershell
+Copy-Item .env.example .env
+```
+
 常用配置项：
 
 ```ini
@@ -116,6 +122,14 @@ Docker 将自动构建镜像（含 Zeo++ 下载与编译），并启动服务。
 ```bash
 python -m venv venv
 source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Windows PowerShell：
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
@@ -171,6 +185,7 @@ curl -X 'POST' \
 
 | 路径 | 功能 |
 | --- | --- |
+| `/` | 根端点，返回服务名、版本和文档入口 |
 | `/health` | 基本健康检查，验证服务运行状态 |
 | `/health/detailed` | 详细健康检查，包含系统信息和 Zeo++ 可用性 |
 | `/version` | 获取 API 版本信息 |

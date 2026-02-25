@@ -29,6 +29,24 @@
 
 ## 1. 系统端点
 
+### 1.0 根端点
+
+**端点**: `GET /`
+
+**描述**: 返回服务基础信息和文档入口。
+
+**响应示例**:
+```json
+{
+  "service": "Zeo++ Backend API",
+  "version": "0.3.1",
+  "docs": "/docs",
+  "status": "ok"
+}
+```
+
+---
+
 ### 1.1 健康检查
 
 **端点**: `GET /health`
@@ -39,7 +57,8 @@
 ```json
 {
   "status": "healthy",
-  "message": "Zeo++ API is running"
+  "timestamp": "2026-02-25T10:30:45.123456Z",
+  "version": "0.3.1"
 }
 ```
 
@@ -55,12 +74,16 @@
 ```json
 {
   "status": "healthy",
+  "timestamp": "2026-02-25T10:30:46.654321Z",
+  "version": "0.3.1",
+  "api_version": "v1",
+  "zeopp_executable": "/usr/local/bin/network",
   "zeopp_available": true,
-  "zeopp_version": "0.3",
-  "system": {
-    "platform": "Linux",
-    "python_version": "3.12.0"
-  }
+  "workspace_root": "workspace",
+  "cache_enabled": true,
+  "log_level": "INFO",
+  "python_version": "3.12.0",
+  "uptime_seconds": 3600.5
 }
 ```
 
@@ -102,7 +125,7 @@
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
 | `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
@@ -149,7 +172,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `chan_radius` | float | ❌ | `1.21` | 通道半径 (Å)，用于确定空间可及性 |
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å)，用于蒙特卡洛采样 |
 | `samples` | integer | ❌ | `2000` | 蒙特卡洛采样点数 |
@@ -210,7 +233,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `chan_radius` | float | ❌ | `1.21` | 通道半径 (Å) |
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å) |
 | `samples` | integer | ❌ | `50000` | 蒙特卡洛采样点数（推荐 50000） |
@@ -279,7 +302,7 @@ curl -X POST "http://localhost:9876/api/v1/accessible_volume" \
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `chan_radius` | float | ❌ | `1.21` | 通道半径 (Å) |
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å) |
 | `samples` | integer | ❌ | `50000` | 蒙特卡洛采样点数 |
@@ -328,7 +351,7 @@ curl -X POST "http://localhost:9876/api/v1/accessible_volume" \
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å) |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
 | `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
@@ -369,7 +392,7 @@ curl -X POST "http://localhost:9876/api/v1/accessible_volume" \
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `probe_radius` | float | ❌ | `1.21` | 探针半径 (Å) |
 | `chan_radius` | float | ❌ | `null` | 通道半径 (Å)，默认等于 probe_radius |
 | `samples` | integer | ❌ | `50000` | 蒙特卡洛采样点数 |
@@ -404,7 +427,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `probe_radius` | float | ❌ | `1.86` | 探针半径 (Å)，默认为甲烷半径 |
 | `samples` | integer | ❌ | `50000` | 蒙特卡洛采样点数 |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
@@ -448,7 +471,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
 | `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
@@ -499,7 +522,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 
 | 参数 | 类型 | 必填 | 默认值 | 描述 |
 |------|------|------|--------|------|
-| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr) |
+| `structure_file` | File | ✅ | - | 结构文件 (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `ha` | boolean | ❌ | `true` | 是否启用高精度模式 |
 | `force_recalculate` | boolean | ❌ | `false` | 强制重新计算，跳过缓存 |
 
@@ -557,8 +580,10 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 **响应示例**:
 ```json
 {
-  "message": "Cleanup completed",
-  "files_removed": 8
+  "success": true,
+  "message": "Cleaned up 8 directories",
+  "removed": 8,
+  "failed": 0
 }
 ```
 
@@ -573,8 +598,10 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 **响应示例**:
 ```json
 {
-  "message": "All cache cleared",
-  "entries_removed": 42
+  "success": true,
+  "message": "Cleared 42 cache entries",
+  "entries_removed": 42,
+  "entries_failed": 0
 }
 ```
 
@@ -741,3 +768,4 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 *文档更新日期：2025-12-31*  
 *API 版本：v0.3.1*
+

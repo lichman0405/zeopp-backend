@@ -69,6 +69,12 @@ Copy `.env.example` to `.env` and modify as needed:
 cp .env.example .env
 ```
 
+For Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
 Common configuration options:
 
 ```ini
@@ -114,6 +120,14 @@ Ensure you have installed Zeo++ following the official instructions and can invo
 ```bash
 python -m venv venv
 source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Windows PowerShell:
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
@@ -169,6 +183,7 @@ Visit the Swagger UI for interactive testing: [http://localhost:9876/docs](http:
 
 | Path | Function |
 | --- | --- |
+| `/` | Root endpoint returning service name, version, and docs entry |
 | `/health` | Basic health check to verify the service is running |
 | `/health/detailed` | Detailed health check with system information and Zeo++ availability |
 | `/version` | Get API version information |

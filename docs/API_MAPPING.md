@@ -9,12 +9,12 @@
 | API 端点 | Zeo++ 标志 | 功能描述 | 推荐参数 |
 | :--- | :--- | :--- | :--- |
 | `/api/v1/pore_diameter` | `-res` | 计算最大包含球 (Di) 和最大自由球 (Df) | `ha=true` |
-| `/api/v1/surface_area` | `-sa` | 计算可达表面积 (ASA) | `num_samples=2000`, `ha=true` |
-| `/api/v1/accessible_volume` | `-vol` | 计算可达体积 (AV) | `num_samples=50000`, `ha=true` |
-| `/api/v1/probe_volume` | `-volpo` | 计算探针占据体积 (POAV) | `num_samples=50000`, `ha=true` |
+| `/api/v1/surface_area` | `-sa` | 计算可达表面积 (ASA) | `samples=2000`, `ha=true` |
+| `/api/v1/accessible_volume` | `-vol` | 计算可达体积 (AV) | `samples=50000`, `ha=true` |
+| `/api/v1/probe_volume` | `-volpo` | 计算探针占据体积 (POAV) | `samples=50000`, `ha=true` |
 | `/api/v1/channel_analysis` | `-chan` | 识别通道系统及其维度 | `ha=true` |
-| `/api/v1/pore_size_dist/download` | `-psd` | 计算孔径分布直方图（返回文件） | `num_samples=50000`, `ha=true` |
-| `/api/v1/blocking_spheres` | `-block` | 生成用于模拟的阻塞球 | `num_samples=50000`, `ha=true` |
+| `/api/v1/pore_size_dist/download` | `-psd` | 计算孔径分布直方图（返回文件） | `samples=50000`, `ha=true` |
+| `/api/v1/blocking_spheres` | `-block` | 生成用于模拟的阻塞球 | `samples=50000`, `ha=true` |
 | `/api/v1/framework_info` | `-strinfo` | 获取框架维度和结构信息 | - |
 | `/api/v1/open_metal_sites` | `-oms` | 自动检测开放金属位点 | - |
 
@@ -26,7 +26,7 @@
 - **建议**：在所有涉及几何计算（孔径、表面积、体积）的请求中，默认设置 `ha=true`。
 - **原因**：Zeo++ 默认的根式近似在处理 MOF/沸石等复杂材料时可能存在 >0.1 Å 的误差。
 
-### 2.2 采样点数 (`num_samples`)
+### 2.2 采样点数 (`samples`)
 - **表面积 (`-sa`)**：
     - 快速预览：500 - 1000
     - 生产精度：**2000** (官方推荐)
@@ -53,7 +53,7 @@
 - **检查文件格式**：确保上传的是 P1 对称性的结构文件。
 
 ### 3.2 为什么计算时间非常长？
-- **采样点数过高**：降低 `num_samples`。
+- **采样点数过高**：降低 `samples`。
 - **结构过于复杂**：超大单元格或包含大量原子的结构会显著增加计算时间。
 - **缓存未命中**：第一次计算总是最慢的，后续相同参数的请求将通过缓存秒回。
 
@@ -61,4 +61,4 @@
 - 目前 API 返回的是全局最大值。如果需要每个晶向的数据，请联系管理员开启 `-resex` 扩展支持。
 
 ---
-*文档更新日期：2025-12-31*
+*文档更新日期：2026-02-25*

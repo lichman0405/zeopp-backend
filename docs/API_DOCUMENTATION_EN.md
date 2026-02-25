@@ -29,6 +29,24 @@
 
 ## 1. System Endpoints
 
+### 1.0 Root Endpoint
+
+**Endpoint**: `GET /`
+
+**Description**: Returns basic service information and docs entry.
+
+**Response Example**:
+```json
+{
+  "service": "Zeo++ Backend API",
+  "version": "0.3.1",
+  "docs": "/docs",
+  "status": "ok"
+}
+```
+
+---
+
 ### 1.1 Health Check
 
 **Endpoint**: `GET /health`
@@ -39,7 +57,8 @@
 ```json
 {
   "status": "healthy",
-  "message": "Zeo++ API is running"
+  "timestamp": "2026-02-25T10:30:45.123456Z",
+  "version": "0.3.1"
 }
 ```
 
@@ -55,12 +74,16 @@
 ```json
 {
   "status": "healthy",
+  "timestamp": "2026-02-25T10:30:46.654321Z",
+  "version": "0.3.1",
+  "api_version": "v1",
+  "zeopp_executable": "/usr/local/bin/network",
   "zeopp_available": true,
-  "zeopp_version": "0.3",
-  "system": {
-    "platform": "Linux",
-    "python_version": "3.12.0"
-  }
+  "workspace_root": "workspace",
+  "cache_enabled": true,
+  "log_level": "INFO",
+  "python_version": "3.12.0",
+  "uptime_seconds": 3600.5
 }
 ```
 
@@ -102,7 +125,7 @@
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
 | `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
@@ -149,7 +172,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `chan_radius` | float | ❌ | `1.21` | Channel radius (Å) for accessibility determination |
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) for Monte Carlo sampling |
 | `samples` | integer | ❌ | `2000` | Number of Monte Carlo samples |
@@ -210,7 +233,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `chan_radius` | float | ❌ | `1.21` | Channel radius (Å) |
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) |
 | `samples` | integer | ❌ | `50000` | Number of Monte Carlo samples (recommended: 50000) |
@@ -267,7 +290,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `chan_radius` | float | ❌ | `1.21` | Channel radius (Å) |
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) |
 | `samples` | integer | ❌ | `50000` | Number of Monte Carlo samples |
@@ -316,7 +339,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
 | `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
@@ -357,7 +380,7 @@ curl -X POST "http://localhost:9876/api/v1/surface_area" \
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `probe_radius` | float | ❌ | `1.21` | Probe radius (Å) |
 | `chan_radius` | float | ❌ | `null` | Channel radius (Å), defaults to probe_radius |
 | `samples` | integer | ❌ | `50000` | Number of Monte Carlo samples |
@@ -392,7 +415,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `probe_radius` | float | ❌ | `1.86` | Probe radius (Å), defaults to methane radius |
 | `samples` | integer | ❌ | `50000` | Number of Monte Carlo samples |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
@@ -436,7 +459,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
 | `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
@@ -487,7 +510,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr) |
+| `structure_file` | File | ✅ | - | Structure file (.cif, .cssr, .v1, .arc, .xyz, .pdb, .cuc) |
 | `ha` | boolean | ❌ | `true` | Enable high accuracy mode |
 | `force_recalculate` | boolean | ❌ | `false` | Force recalculation, bypass cache |
 
@@ -545,8 +568,10 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 **Response Example**:
 ```json
 {
-  "message": "Cleanup completed",
-  "files_removed": 8
+  "success": true,
+  "message": "Cleaned up 8 directories",
+  "removed": 8,
+  "failed": 0
 }
 ```
 
@@ -561,8 +586,10 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 **Response Example**:
 ```json
 {
-  "message": "All cache cleared",
-  "entries_removed": 42
+  "success": true,
+  "message": "Cleared 42 cache entries",
+  "entries_removed": 42,
+  "entries_failed": 0
 }
 ```
 
@@ -729,3 +756,4 @@ All responses include the following custom headers:
 
 *Documentation Updated: 2025-12-31*  
 *API Version: v0.3.1*
+
