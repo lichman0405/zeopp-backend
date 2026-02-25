@@ -75,8 +75,10 @@
 **响应示例**:
 ```json
 {
+  "service": "Zeo++ API Service",
   "version": "0.3.1",
-  "api_version": "v1"
+  "api_version": "v1",
+  "description": "A containerized FastAPI service for Zeo++ structure analysis"
 }
 ```
 
@@ -530,9 +532,17 @@ curl -X POST "http://localhost:9876/api/v1/pore_size_dist/download" \
 **响应示例**:
 ```json
 {
-  "temp_files": 15,
-  "cache_entries": 42,
-  "total_size_mb": 12.5
+  "cache": {
+    "exists": true,
+    "count": 42,
+    "total_size_mb": 12.5
+  },
+  "temp": {
+    "exists": true,
+    "count": 15,
+    "total_size_mb": 1.2
+  },
+  "cache_enabled": true
 }
 ```
 

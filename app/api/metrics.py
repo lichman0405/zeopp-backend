@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 from fastapi import APIRouter, Response
 
+from app.core.limiter import limiter
+
 router = APIRouter(tags=["Monitoring"])
 
 
@@ -146,6 +148,7 @@ metrics_store = MetricsStore()
 
 
 @router.get("/metrics", response_class=Response, include_in_schema=False)
+@limiter.exempt
 async def prometheus_metrics():
     """
     Prometheus metrics endpoint.

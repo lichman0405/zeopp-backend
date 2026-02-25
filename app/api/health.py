@@ -8,7 +8,9 @@ from fastapi import APIRouter, status
 from pydantic import BaseModel
 from datetime import datetime
 import sys
-import sh
+import shutil
+import subprocess
+from pathlib import Path
 
 from app.core.config import ZEO_EXECUTABLE, WORKSPACE_ROOT, ENABLE_CACHE, LOG_LEVEL, settings
 
@@ -37,6 +39,36 @@ class DetailedHealthResponse(BaseModel):
 
 # Store start time for uptime calculation
 _start_time = datetime.utcnow()
+
+
+def _check_zeopp_available() -> bool:
+    """
+    Check whether the Zeo++ executable is callable in current environment.
+    Supports both PATH lookups and explicit file paths.
+    """
+    exec_candidate = ZEO_EXECUTABLE
+    executable = None
+
+    candidate_path = Path(exec_candidate)
+    if candidate_path.exists():
+        executable = str(candidate_path)
+    else:
+        executable = shutil.which(exec_candidate)
+
+    if not executable:
+        return False
+
+    try:
+        result = subprocess.run(
+            [executable, "--help"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10
+        )
+        return result.returncode in (0, 1)
+    except Exception:
+        return False
 
 
 @router.get(
@@ -74,14 +106,7 @@ async def detailed_health_check():
     Returns:
         DetailedHealthResponse: Comprehensive health status and system info
     """
-    # Check if Zeo++ is available
-    zeopp_available = False
-    try:
-        # Try to execute Zeo++ with --help or version flag
-        sh.Command(ZEO_EXECUTABLE)("--help", _ok_code=[0, 1])
-        zeopp_available = True
-    except (sh.CommandNotFound, sh.ErrorReturnCode, FileNotFoundError):
-        zeopp_available = False
+    zeopp_available = _check_zeopp_available()
     
     # Calculate uptime
     uptime = (datetime.utcnow() - _start_time).total_seconds()
@@ -116,7 +141,7 @@ async def get_version():
     """
     return {
         "service": "Zeo++ API Service",
-        "version": "0.3.0",
+        "version": settings.version,
         "api_version": "v1",
         "description": "A containerized FastAPI service for Zeo++ structure analysis"
     }

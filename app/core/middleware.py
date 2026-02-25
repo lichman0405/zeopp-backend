@@ -10,7 +10,7 @@ Custom middleware for request processing, timing, and security.
 
 import time
 import uuid
-from typing import Callable
+from typing import Callable, Optional
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -81,7 +81,7 @@ ALLOWED_EXTENSIONS = {
 }
 
 
-def validate_structure_file(filename: str) -> bool:
+def validate_structure_file(filename: Optional[str]) -> bool:
     """
     Validate that the uploaded file has an allowed extension.
     

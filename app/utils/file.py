@@ -27,7 +27,13 @@ def save_uploaded_file(uploaded_file, prefix: str = "task") -> Path:
     task_dir = TMP_DIR / task_id
     task_dir.mkdir(parents=True)
 
-    file_path = task_dir / uploaded_file.filename
+    # Keep only the basename to prevent path traversal in upload filenames.
+    safe_filename = Path(uploaded_file.filename or "").name
+    safe_filename = safe_filename.replace("\\", "_").replace("/", "_")
+    if not safe_filename:
+        safe_filename = "structure.cif"
+
+    file_path = task_dir / safe_filename
     with open(file_path, "wb") as f:
         f.write(uploaded_file.file.read())
 

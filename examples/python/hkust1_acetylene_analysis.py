@@ -22,7 +22,6 @@ HKUST-1 (Cu-BTC, MOF-199) 是一种经典的 MOF 材料，因其：
 """
 
 import requests
-import json
 import sys
 from pathlib import Path
 from dataclasses import dataclass
@@ -32,7 +31,7 @@ from typing import Optional, Dict, Any
 # 配置参数
 # =============================================================================
 
-API_BASE_URL = "http://192.168.100.207:9876"
+API_BASE_URL = "http://localhost:9876"
 
 # 乙炔 (C2H2) 分子参数
 C2H2_KINETIC_DIAMETER = 3.3  # Å
@@ -224,7 +223,6 @@ def analyze_accessible_volume_for_c2h2():
         data = result.data
         density = data.get("density", 0)
         av_data = data.get("av", {})
-        nav_data = data.get("nav", {})
         
         av_fraction = av_data.get("fraction", 0)
         av_cm3_g = av_data.get("mass", 0)
@@ -264,12 +262,16 @@ def analyze_channel():
     if result.success:
         data = result.data
         dimension = data.get("dimension", 0)
-        channels = data.get("channels", [])
+        included_diameter = data.get("included_diameter", 0)
+        free_diameter = data.get("free_diameter", 0)
+        included_along_free = data.get("included_along_free", 0)
         
         print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
         print()
         print_result("通道维度", dimension, "D")
-        print_result("通道数量", len(channels))
+        print_result("通道包含球直径 (Di)", f"{included_diameter:.3f}", "Å")
+        print_result("通道自由球直径 (Df)", f"{free_diameter:.3f}", "Å")
+        print_result("沿自由路径包含球直径 (Dif)", f"{included_along_free:.3f}", "Å")
         
         if dimension == 3:
             print("  ✅ 3D 互连通道 - 有利于乙炔分子快速扩散")
@@ -294,7 +296,7 @@ def analyze_open_metal_sites():
     
     if result.success:
         data = result.data
-        oms_count = data.get("oms_count", 0)
+        oms_count = data.get("open_metal_sites_count", 0)
         
         print_result("开放金属位点数量", oms_count)
         print()
@@ -401,17 +403,21 @@ def analyze_blocking_spheres():
     
     if result.success:
         data = result.data
-        spheres = data.get("blocking_spheres", [])
+        channels = data.get("channels", 0)
+        pockets = data.get("pockets", 0)
+        nodes_assigned = data.get("nodes_assigned", 0)
         
         print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
         print()
-        print_result("阻塞球数量", len(spheres))
+        print_result("识别通道数量", channels)
+        print_result("识别口袋数量", pockets)
+        print_result("已分配节点数", nodes_assigned)
         
-        if len(spheres) == 0:
+        if channels == 0 and pockets == 0:
             print("  ✅ 无阻塞区域 - 所有孔道对乙炔完全可及")
         else:
-            print(f"  ⚠️ 存在 {len(spheres)} 个阻塞区域")
-            print("     这些区域乙炔分子无法进入")
+            print("  ⚠️ 检测到阻塞区域")
+            print("     可结合 raw 字段进一步查看详情")
         
         return data
     else:

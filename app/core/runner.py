@@ -1,30 +1,82 @@
-# The Code is to implement the command of zeo++
+"""Zeo++ command runner with caching and async thread-pool execution."""
+
 # -*- coding: utf-8 -*-
 # Author: Shibo Li
 # Date: 2025-05-13
-# Updated: 2025-12-31 - Added thread pool async execution for non-blocking operation
+# Updated: 2026-02-25 - Added cross-platform subprocess fallback for Windows development
 
-# app/core/runner.py
-
-import sh
 import asyncio
 import functools
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
-from app.utils.logger import logger
+from app.core.config import WORKSPACE_ROOT, ZEO_EXECUTABLE, settings
 from app.utils.file import compute_cache_key, get_cache_path
-from app.core.config import ZEO_EXECUTABLE, WORKSPACE_ROOT, ENABLE_CACHE, settings
+from app.utils.logger import logger
 
-# Thread pool for executing Zeo++ tasks without blocking the event loop
+try:
+    import sh as sh_lib  # type: ignore[import-untyped]
+except ImportError:
+    sh_lib = None
+
+
 _executor = ThreadPoolExecutor(max_workers=settings.max_concurrent_tasks)
+
+
+def _safe_read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _decode_stream(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
 
 
 class ZeoRunner:
     def __init__(self, zeo_exec_path: str = ZEO_EXECUTABLE, workspace: Path = WORKSPACE_ROOT):
         self.zeo_exec = zeo_exec_path
         self.workspace = workspace
+
+    def _run_with_sh(self, zeo_args: List[str], cwd: Path) -> Tuple[bool, int, str, str]:
+        """Run command via `sh` (Linux/macOS)."""
+        try:
+            result = sh_lib.Command(self.zeo_exec)(  # type: ignore[union-attr]
+                *zeo_args,
+                _cwd=str(cwd),
+                _err_to_out=True
+            )
+            return True, 0, str(result), ""
+        except sh_lib.CommandNotFound as exc:  # type: ignore[union-attr]
+            return False, 127, "", str(exc)
+        except sh_lib.ErrorReturnCode as exc:  # type: ignore[union-attr]
+            return (
+                False,
+                int(exc.exit_code),
+                _decode_stream(exc.stdout),
+                _decode_stream(exc.stderr),
+            )
+
+    def _run_with_subprocess(self, zeo_args: List[str], cwd: Path) -> Tuple[bool, int, str, str]:
+        """Run command via subprocess (cross-platform fallback)."""
+        cmd = [self.zeo_exec, *zeo_args]
+        try:
+            completed = subprocess.run(
+                cmd,
+                cwd=str(cwd),
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            return completed.returncode == 0, completed.returncode, completed.stdout or "", completed.stderr or ""
+        except FileNotFoundError:
+            return False, 127, "", f"Executable not found: {self.zeo_exec}"
+        except Exception as exc:
+            return False, 1, "", str(exc)
 
     def run_command(
         self,
@@ -35,32 +87,17 @@ class ZeoRunner:
         skip_cache: bool = False
     ) -> Dict:
         """
-        Run Zeo++ with given args. Check cache first. If hit, return cached result.
-
-        Args:
-            structure_file (Path): uploaded input file path
-            zeo_args (List[str]): command args passed to `network`
-            output_files (List[str]): list of expected output filenames
-            extra_identifier (str): optional string to distinguish different calls
-            skip_cache (bool): if True, skip cache lookup and force recalculation
+        Run Zeo++ command with cache lookup.
 
         Returns:
-            Dict: {
-                success: bool,
-                exit_code: int,
-                stdout: str,
-                stderr: str,
-                cached: bool,
-                output_data: Dict[filename] = file content
-            }
+            Dict containing execution status and output file content.
         """
         logger.info(f"[runner] Preparing Zeo++ command: {zeo_args}")
 
-        # create cache directory and cache key
         cache_key = compute_cache_key(structure_file, zeo_args, extra_identifier)
         cache_dir = get_cache_path(cache_key)
 
-        if ENABLE_CACHE and cache_dir.exists() and not skip_cache:
+        if settings.enable_cache and cache_dir.exists() and not skip_cache:
             logger.info(f"[cache] Cache hit for key: {cache_key}")
             return {
                 "success": True,
@@ -68,48 +105,52 @@ class ZeoRunner:
                 "stdout": "[cache] Used cached result.",
                 "stderr": "",
                 "cached": True,
-                "output_data": {f.name: f.read_text() for f in cache_dir.glob("*")}
+                "output_data": {f.name: _safe_read_text(f) for f in cache_dir.glob("*") if f.is_file()}
             }
-        
+
         if skip_cache:
             logger.info("[cache] Skipping cache (force_recalculate=True)")
 
         logger.info("[cache] Cache miss. Running Zeo++...")
 
-        try:
-            result = sh.Command(self.zeo_exec)(*zeo_args, _cwd=str(structure_file.parent), _err_to_out=True)
-            logger.info("[zeo++] Execution completed.")
+        cwd = structure_file.parent
+        if sh_lib is not None:
+            success, exit_code, stdout, stderr = self._run_with_sh(zeo_args, cwd)
+        else:
+            success, exit_code, stdout, stderr = self._run_with_subprocess(zeo_args, cwd)
 
-            if ENABLE_CACHE:
-                cache_dir.mkdir(parents=True, exist_ok=True)
-                for out_file in output_files:
-                    out_path = structure_file.parent / out_file
-                    if out_path.exists():
-                        cached_path = cache_dir / out_file
-                        cached_path.write_text(out_path.read_text())
-
-            return {
-                "success": True,
-                "exit_code": 0,
-                "stdout": str(result),
-                "stderr": "",
-                "cached": False,
-                "output_data": {
-                    f: (structure_file.parent / f).read_text()
-                    for f in output_files if (structure_file.parent / f).exists()
-                }
-            }
-
-        except sh.ErrorReturnCode as e:
-            logger.error(f"[zeo++] Error: Exit code {e.exit_code}")
+        if not success:
+            logger.error(f"[zeo++] Error: Exit code {exit_code}")
             return {
                 "success": False,
-                "exit_code": e.exit_code,
-                "stdout": e.stdout.decode() if e.stdout else "",
-                "stderr": e.stderr.decode() if e.stderr else "",
+                "exit_code": exit_code,
+                "stdout": stdout,
+                "stderr": stderr,
                 "cached": False,
                 "output_data": {}
             }
+
+        logger.info("[zeo++] Execution completed.")
+
+        if settings.enable_cache:
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            for out_file in output_files:
+                out_path = cwd / out_file
+                if out_path.exists():
+                    (cache_dir / out_file).write_text(_safe_read_text(out_path), encoding="utf-8")
+
+        return {
+            "success": True,
+            "exit_code": 0,
+            "stdout": stdout,
+            "stderr": stderr,
+            "cached": False,
+            "output_data": {
+                filename: _safe_read_text(cwd / filename)
+                for filename in output_files
+                if (cwd / filename).exists()
+            }
+        }
 
     async def run_command_async(
         self,
@@ -119,18 +160,8 @@ class ZeoRunner:
         extra_identifier: Optional[str] = None,
         skip_cache: bool = False
     ) -> Dict:
-        """
-        Async wrapper for run_command. Executes Zeo++ in a thread pool
-        to avoid blocking the event loop.
-        
-        This allows health checks and other requests to be processed
-        while a long-running Zeo++ calculation is in progress.
-        
-        Args:
-            skip_cache (bool): If True, skip cache and force recalculation.
-        """
+        """Async wrapper for `run_command` that uses thread pool execution."""
         loop = asyncio.get_event_loop()
-        # Use functools.partial to pass keyword argument
         func = functools.partial(
             self.run_command,
             structure_file,

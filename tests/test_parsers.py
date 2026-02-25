@@ -154,8 +154,8 @@ class TestParseChanFromText:
         result = parse_chan_from_text(sample_chan_output)
         
         assert result["dimension"] == 1
-        assert result["included_diameter"] == 3.03868
-        assert result["free_diameter"] == 4.89082
+        assert result["included_diameter"] == 4.89082
+        assert result["free_diameter"] == 3.03868
         assert result["included_along_free"] == 4.89082
 
     def test_parse_chan_empty_input(self):

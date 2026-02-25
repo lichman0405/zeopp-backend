@@ -9,7 +9,7 @@ import requests
 import csv
 import sys
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, asdict
 from datetime import datetime

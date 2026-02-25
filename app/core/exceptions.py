@@ -49,12 +49,12 @@ class ZeoppBaseException(Exception):
     """Base exception for all Zeo++ API errors."""
     error_code: ErrorCode = ErrorCode.INTERNAL_ERROR
     
-    def __init__(self, message: str, details: dict = None):
+    def __init__(self, message: str, details: Optional[dict[str, Any]] = None):
         self.message = message
         self.details = details or {}
         super().__init__(self.message)
     
-    def to_response(self, request_id: str = None) -> ErrorResponse:
+    def to_response(self, request_id: Optional[str] = None) -> ErrorResponse:
         """Convert exception to standardized error response."""
         return ErrorResponse(
             error_code=self.error_code.value,
@@ -68,7 +68,7 @@ class ZeoppExecutionError(ZeoppBaseException):
     """Raised when Zeo++ command execution fails."""
     error_code = ErrorCode.EXECUTION_FAILED
     
-    def __init__(self, message: str, exit_code: int = None, stderr: str = None):
+    def __init__(self, message: str, exit_code: Optional[int] = None, stderr: Optional[str] = None):
         details = {
             "exit_code": exit_code,
             "stderr": stderr
@@ -82,7 +82,7 @@ class ZeoppParsingError(ZeoppBaseException):
     """Raised when parsing Zeo++ output fails."""
     error_code = ErrorCode.PARSING_FAILED
     
-    def __init__(self, message: str, output_file: str = None, raw_content: str = None):
+    def __init__(self, message: str, output_file: Optional[str] = None, raw_content: Optional[str] = None):
         details = {
             "output_file": output_file,
             "raw_content": raw_content[:200] if raw_content else None  # Truncate for logging
@@ -96,7 +96,7 @@ class ZeoppOutputNotFoundError(ZeoppBaseException):
     """Raised when expected output file is not generated."""
     error_code = ErrorCode.OUTPUT_NOT_FOUND
     
-    def __init__(self, message: str, expected_file: str = None):
+    def __init__(self, message: str, expected_file: Optional[str] = None):
         details = {"expected_file": expected_file}
         super().__init__(message, details)
         self.expected_file = expected_file
@@ -106,7 +106,7 @@ class ZeoppValidationError(ZeoppBaseException):
     """Raised when input validation fails."""
     error_code = ErrorCode.INVALID_PARAMETER
     
-    def __init__(self, message: str, field: str = None, value: Any = None):
+    def __init__(self, message: str, field: Optional[str] = None, value: Any = None):
         details = {
             "field": field,
             "value": str(value) if value is not None else None
@@ -120,7 +120,7 @@ class ZeoppFileTooLargeError(ZeoppBaseException):
     """Raised when uploaded file exceeds size limit."""
     error_code = ErrorCode.FILE_TOO_LARGE
     
-    def __init__(self, message: str, file_size: int = None, max_size: int = None):
+    def __init__(self, message: str, file_size: Optional[int] = None, max_size: Optional[int] = None):
         details = {
             "file_size_bytes": file_size,
             "max_size_bytes": max_size
@@ -132,7 +132,7 @@ class ZeoppInvalidFileTypeError(ZeoppBaseException):
     """Raised when uploaded file has invalid extension."""
     error_code = ErrorCode.INVALID_FILE_TYPE
     
-    def __init__(self, message: str, filename: str = None, allowed_types: list = None):
+    def __init__(self, message: str, filename: Optional[str] = None, allowed_types: Optional[list[str]] = None):
         details = {
             "filename": filename,
             "allowed_types": allowed_types

@@ -7,12 +7,13 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 # Import configuration and middleware
 from app.core.config import settings
+from app.core.limiter import limiter
 from app.core.middleware import RequestTimingMiddleware
 
 # Import all route modules
@@ -31,9 +32,6 @@ from app.api import (
     metrics
 )
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
-
 app = FastAPI(
     title=settings.app_name,
     description="A containerized FastAPI service for Zeo++ structure analysis with versioned endpoints",
@@ -44,7 +42,8 @@ app = FastAPI(
 
 # Add rate limiter to app state
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+app.add_middleware(SlowAPIMiddleware)
 
 # Add request timing middleware
 app.add_middleware(RequestTimingMiddleware)
@@ -73,6 +72,17 @@ app.include_router(framework_info.router)
 app.include_router(pore_size_dist.router)
 app.include_router(blocking_spheres.router)
 app.include_router(open_metal_sites.router)
+
+
+@app.get("/", tags=["System"])
+async def root():
+    """Root endpoint for quick service status check."""
+    return {
+        "service": settings.app_name,
+        "version": settings.version,
+        "docs": "/docs",
+        "status": "ok"
+    }
 
 
 @app.on_event("startup")
