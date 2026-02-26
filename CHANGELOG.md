@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **MCP Service (Streamable HTTP)**:
+  - Added `app/mcp/main.py` as a dedicated MCP server entrypoint.
+  - Added MCP tools for all major Zeo++ workflows:
+    - system/cache tools: `health`, `version`, `cache_stats`, `cache_cleanup`, `cache_clear`
+    - analysis tools: `pore_diameter`, `surface_area`, `accessible_volume`, `probe_volume`,
+      `channel_analysis`, `framework_info`, `open_metal_sites`, `blocking_spheres`,
+      `pore_size_dist_summary`
+  - Added flexible structure input modes for MCP tools:
+    - `structure_path` (restricted by allowed roots),
+    - `structure_text`,
+    - `structure_base64`
+  - Added MCP bearer-token gate (`MCP_AUTH_TOKEN`) and path/response limits.
+
+### Changed
+- **Dependencies**:
+  - Added `mcp>=1.26.0,<2.0.0` to `requirements.txt`.
+
+- **Deployment**:
+  - Added `zeopp-mcp` service in `docker-compose.yml`.
+  - Added development override for `zeopp-mcp` in `docker-compose.dev.yml`.
+  - Added MCP environment variables in `.env.example`.
+
+- **Documentation**:
+  - Added `docs/MCP_INTEGRATION.md`.
+  - Updated `README.md`, `README-en.md`, `docs/API_DOCUMENTATION.md`, and `docs/API_DOCUMENTATION_EN.md`
+    with MCP usage and integration notes.
+
 ## [0.3.1] - 2025-12-31
 
 ### Added

@@ -59,3 +59,7 @@ htmlcov/
 
 # Docker
 .dockerignore
+
+
+.mypy_cache
+.ruff_cache

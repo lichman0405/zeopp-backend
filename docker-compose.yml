@@ -29,6 +29,7 @@ services:
       - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-4}
     volumes:
       - zeopp-workspace:/app/workspace
+      - zeopp-shared:/shared
     restart: ${RESTART_POLICY:-unless-stopped}
     healthcheck:
       # 注意：OMS 等长时间计算任务可能导致服务响应变慢
@@ -52,6 +53,52 @@ services:
         max-size: "${LOG_MAX_SIZE:-10m}"
         max-file: "${LOG_MAX_FILES:-3}"
 
+  zeopp-mcp:
+    container_name: ${MCP_CONTAINER_NAME:-zeopp-mcp}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: zeopp-api:${IMAGE_TAG:-0.3.1}
+    ports:
+      - "${MCP_HOST_PORT:-9877}:8000"
+    environment:
+      - ZEO_EXEC_PATH=${ZEO_EXEC_PATH:-/usr/local/bin/network}
+      - ENABLE_CACHE=${ENABLE_CACHE:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-50}
+      - UVICORN_WORKERS=${UVICORN_WORKERS:-2}
+      - MAX_CONCURRENT_TASKS=${MAX_CONCURRENT_TASKS:-4}
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:-}
+      - MCP_STREAMABLE_HTTP_PATH=${MCP_STREAMABLE_HTTP_PATH:-/mcp}
+      - MCP_ALLOWED_PATH_ROOTS=${MCP_ALLOWED_PATH_ROOTS:-/app/workspace,/shared}
+      - MCP_MAX_RESULT_CHARS=${MCP_MAX_RESULT_CHARS:-12000}
+    volumes:
+      - zeopp-workspace:/app/workspace
+      - zeopp-shared:/shared
+    restart: ${RESTART_POLICY:-unless-stopped}
+    command: ["sh", "-c", "uvicorn app.mcp.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--max-time", "30", "http://localhost:8000/health"]
+      interval: ${HEALTHCHECK_INTERVAL:-60}s
+      timeout: ${HEALTHCHECK_TIMEOUT:-30}s
+      retries: ${HEALTHCHECK_RETRIES:-5}
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '${CPU_LIMIT:-2}'
+          memory: ${MEMORY_LIMIT:-2G}
+        reservations:
+          cpus: '${CPU_RESERVATION:-0.5}'
+          memory: ${MEMORY_RESERVATION:-512M}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILES:-3}"
+
 volumes:
   zeopp-workspace:
+    driver: local
+  zeopp-shared:
     driver: local

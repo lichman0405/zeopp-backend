@@ -22,8 +22,9 @@
    - [Open Metal Sites](#32-open-metal-sites-open_metal_sites)
 4. [Cache Management Endpoints](#4-cache-management-endpoints)
 5. [Monitoring Endpoints](#5-monitoring-endpoints)
-6. [Common Parameters](#6-common-parameters)
-7. [Error Response Format](#7-error-response-format)
+6. [MCP Service](#6-mcp-service)
+7. [Common Parameters](#7-common-parameters)
+8. [Error Response Format](#8-error-response-format)
 
 ---
 
@@ -646,9 +647,33 @@ zeopp_requests_total 1234
 
 ---
 
-## 6. Common Parameters
+## 6. MCP Service
 
-### 6.1 High Accuracy Mode (`ha`)
+The MCP service is intended for agent-side tool calls (for example featherflow) and is deployed on a dedicated port by default.
+
+- Default endpoint: `http://localhost:9877/mcp`
+- Transport: Streamable HTTP
+- Auth: `Authorization: Bearer <MCP_AUTH_TOKEN>` (when token is configured)
+- Details: see [MCP Integration Guide](./MCP_INTEGRATION.md)
+
+Available MCP tools:
+
+- `health`, `version`, `cache_stats`, `cache_cleanup`, `cache_clear`
+- `pore_diameter`, `surface_area`, `accessible_volume`, `probe_volume`
+- `channel_analysis`, `framework_info`, `open_metal_sites`, `blocking_spheres`
+- `pore_size_dist_summary`
+
+Input mode (exactly one per call):
+
+- `structure_path`
+- `structure_text`
+- `structure_base64`
+
+---
+
+## 7. Common Parameters
+
+### 7.1 High Accuracy Mode (`ha`)
 
 | Value | Description |
 |-------|-------------|
@@ -659,7 +684,7 @@ zeopp_requests_total 1234
 
 ---
 
-### 6.2 Force Recalculate (`force_recalculate`)
+### 7.2 Force Recalculate (`force_recalculate`)
 
 | Value | Description |
 |-------|-------------|
@@ -680,7 +705,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 ---
 
-### 6.3 Probe Radius Reference
+### 7.3 Probe Radius Reference
 
 Choose appropriate probe radius based on the molecule of interest:
 
@@ -695,7 +720,7 @@ Choose appropriate probe radius based on the molecule of interest:
 
 ---
 
-### 6.4 Sample Count Recommendations
+### 7.4 Sample Count Recommendations
 
 | Analysis Type | Quick Preview | Production | High Precision |
 |---------------|---------------|------------|----------------|
@@ -706,7 +731,7 @@ Choose appropriate probe radius based on the molecule of interest:
 
 ---
 
-### 6.5 Supported File Formats
+### 7.5 Supported File Formats
 
 | Extension | Format | Description |
 |-----------|--------|-------------|
@@ -719,7 +744,7 @@ Choose appropriate probe radius based on the molecule of interest:
 
 ---
 
-## 7. Error Response Format
+## 8. Error Response Format
 
 All error responses follow a unified format:
 
@@ -754,6 +779,6 @@ All responses include the following custom headers:
 
 ---
 
-*Documentation Updated: 2025-12-31*  
+*Documentation Updated: 2026-02-26*  
 *API Version: v0.3.1*
 

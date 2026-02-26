@@ -40,6 +40,7 @@ This project addresses the pain points of using Zeo++ directly: it transforms co
 - 🔒 **Security Hardened**: Rate limiting, file validation, request tracking
 - 📊 **Observability**: Prometheus metrics endpoint for monitoring
 - 🧪 **Test Coverage**: Comprehensive unit and integration test suite
+- 🤖 **MCP Support**: Streamable HTTP MCP server for agent integration (featherflow / nanobot-style runtimes)
 
 ## 📚 Documentation
 
@@ -49,6 +50,7 @@ For detailed usage, please refer to the following documentation:
 - [**API 完整接口文档 (中文)**](./docs/API_DOCUMENTATION.md): 所有端点的详细参数和示例
 - [**Zeo++ Reference Guide**](./docs/ZEO++_REFERENCE.md): In-depth Zeo++ command reference
 - [**API Mapping Guide**](./docs/API_MAPPING.md): API to Zeo++ command mapping
+- [**MCP Integration Guide**](./docs/MCP_INTEGRATION.md): Deployment, auth, tool list, and featherflow integration
 - [**Usage Examples**](./examples/): Python and cURL examples with sample structure files
 
 ## ⚡ Quick Start
@@ -82,6 +84,7 @@ Common configuration options:
 
 # Service port (external access port)
 HOST_PORT=9876
+MCP_HOST_PORT=9877
 
 # Application settings
 ENABLE_CACHE=true
@@ -92,6 +95,10 @@ MAX_UPLOAD_SIZE_MB=50
 # Performance configuration
 UVICORN_WORKERS=2           # Worker processes, recommended to set to CPU cores
 MAX_CONCURRENT_TASKS=4      # Maximum concurrent Zeo++ tasks
+# MCP settings
+MCP_AUTH_TOKEN=             # Strongly recommended in production
+MCP_STREAMABLE_HTTP_PATH=/mcp
+MCP_ALLOWED_PATH_ROOTS=/app/workspace,/shared
 # Resource limits
 CPU_LIMIT=2
 MEMORY_LIMIT=2G
@@ -173,6 +180,36 @@ curl -X 'POST' \
 
 Replace `/path/to/your/file.cif` with the actual path to your local structure file. Parameters (e.g., `ha=true`) are sent as form fields using `-F`.
 
+### MCP (for agent callers)
+
+Launch MCP service (already included as `zeopp-mcp` in Docker Compose):
+
+```bash
+docker-compose up -d zeopp-mcp
+```
+
+Default MCP endpoint: `http://localhost:9877/mcp`
+
+Example featherflow config in `~/.featherflow/config.json`:
+
+```json
+{
+  "tools": {
+    "mcpServers": {
+      "zeopp": {
+        "url": "http://localhost:9877/mcp",
+        "headers": {
+          "Authorization": "Bearer <MCP_AUTH_TOKEN>"
+        },
+        "toolTimeout": 120
+      }
+    }
+  }
+}
+```
+
+> Note: use `mcpServers` (or `mcp_servers`). `tools.mcp` is ignored.
+
 ### Interactive Documentation
 
 Visit the Swagger UI for interactive testing: [http://localhost:9876/docs](http://localhost:9876/docs)
@@ -192,6 +229,7 @@ Visit the Swagger UI for interactive testing: [http://localhost:9876/docs](http:
 | `/api/v1/cache/stats` | Cache statistics |
 | `/api/v1/cache/cleanup` | Clean up old temporary files |
 | `/api/v1/cache/clear` | Clear all cache |
+| `MCP service: /mcp` | Streamable HTTP MCP endpoint (default on port 9877) |
 
 ### Core Geometry Analysis (v1 API)
 
@@ -225,6 +263,7 @@ All endpoints require a `structure_file` uploaded as a file.
 - 🧪 **Test Suite**: Complete pytest unit tests and API integration tests
 - 🐳 **Docker Optimization**: Multi-stage build, non-root user, health checks
 - 📝 **Complete Documentation**: Zeo++ command reference and API mapping guide
+- 🤖 **MCP Service**: Streamable HTTP MCP endpoint and integration documentation
 
 ### v0.3.0 Features
 - ✅ API Versioning: All analysis endpoints use `/api/v1/` prefix

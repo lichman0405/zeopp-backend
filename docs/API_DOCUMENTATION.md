@@ -22,8 +22,9 @@
    - [开放金属位点](#32-开放金属位点-open_metal_sites)
 4. [缓存管理端点](#4-缓存管理端点)
 5. [监控端点](#5-监控端点)
-6. [通用参数说明](#6-通用参数说明)
-7. [错误响应格式](#7-错误响应格式)
+6. [MCP 服务](#6-mcp-服务)
+7. [通用参数说明](#7-通用参数说明)
+8. [错误响应格式](#8-错误响应格式)
 
 ---
 
@@ -658,9 +659,33 @@ zeopp_requests_total 1234
 
 ---
 
-## 6. 通用参数说明
+## 6. MCP 服务
 
-### 6.1 高精度模式 (`ha`)
+MCP 服务用于 Agent 调用（如 featherflow）。默认与 HTTP API 分离部署在独立端口。
+
+- 默认地址：`http://localhost:9877/mcp`
+- 传输协议：Streamable HTTP
+- 鉴权方式：`Authorization: Bearer <MCP_AUTH_TOKEN>`（当 `MCP_AUTH_TOKEN` 非空时）
+- 文档：详见 [MCP 集成指南](./MCP_INTEGRATION.md)
+
+已提供 MCP 工具（与 API 参数语义一致）：
+
+- `health`, `version`, `cache_stats`, `cache_cleanup`, `cache_clear`
+- `pore_diameter`, `surface_area`, `accessible_volume`, `probe_volume`
+- `channel_analysis`, `framework_info`, `open_metal_sites`, `blocking_spheres`
+- `pore_size_dist_summary`
+
+输入方式（每次调用三选一）：
+
+- `structure_path`
+- `structure_text`
+- `structure_base64`
+
+---
+
+## 7. 通用参数说明
+
+### 7.1 高精度模式 (`ha`)
 
 | 值 | 描述 |
 |---|---|
@@ -671,7 +696,7 @@ zeopp_requests_total 1234
 
 ---
 
-### 6.2 强制重新计算 (`force_recalculate`)
+### 7.2 强制重新计算 (`force_recalculate`)
 
 | 值 | 描述 |
 |---|---|
@@ -692,7 +717,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 ---
 
-### 6.4 探针半径参考
+### 7.3 探针半径参考
 
 根据研究的分子选择合适的探针半径：
 
@@ -707,7 +732,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 ---
 
-### 6.5 采样点数建议
+### 7.4 采样点数建议
 
 | 分析类型 | 快速预览 | 生产精度 | 高精度研究 |
 |----------|----------|----------|------------|
@@ -718,7 +743,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 ---
 
-### 6.6 支持的文件格式
+### 7.5 支持的文件格式
 
 | 扩展名 | 格式 | 描述 |
 |--------|------|------|
@@ -731,7 +756,7 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 ---
 
-## 7. 错误响应格式
+## 8. 错误响应格式
 
 所有错误响应遵循统一格式：
 
@@ -766,6 +791,6 @@ curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
 
 ---
 
-*文档更新日期：2025-12-31*  
+*文档更新日期：2026-02-26*  
 *API 版本：v0.3.1*
 

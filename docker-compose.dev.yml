@@ -12,10 +12,27 @@ services:
       # Mount source code for hot-reloading
       - ./app:/app/app:ro
       - ./workspace:/app/workspace
+      - ./shared:/shared
       - ./.env:/app/.env:ro
     # Use uvicorn with reload for development
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     # Remove resource limits for development
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+
+  zeopp-mcp:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENABLE_CACHE=false
+    volumes:
+      - ./app:/app/app:ro
+      - ./workspace:/app/workspace
+      - ./shared:/shared
+      - ./.env:/app/.env:ro
+    command: ["uvicorn", "app.mcp.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     deploy:
       resources:
         limits:

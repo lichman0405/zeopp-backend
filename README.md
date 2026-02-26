@@ -40,6 +40,7 @@
 - 🔒 **安全加固**：请求限流、文件验证、请求追踪
 - 📊 **可观测性**：Prometheus 指标端点，请求性能监控
 - 🧪 **测试覆盖**：完整的单元测试和集成测试套件
+- 🤖 **MCP 支持**：提供 Streamable HTTP MCP 服务，可直接接入 featherflow / nanobot 类 Agent
 
 ## 📚 详细文档
 
@@ -49,6 +50,7 @@
 - [**API Documentation (English)**](./docs/API_DOCUMENTATION_EN.md)：Complete API reference in English
 - [**Zeo++ 功能参考指南**](./docs/ZEO++_REFERENCE.md)：深入了解底层 Zeo++ 的所有命令、参数含义及物理背景
 - [**API 映射手册**](./docs/API_MAPPING.md)：API 端点与 Zeo++ 命令的对应关系，以及推荐的参数配置
+- [**MCP 集成指南**](./docs/MCP_INTEGRATION.md)：MCP 服务部署、鉴权、工具列表与 featherflow 接入配置
 - [**使用示例**](./examples/)：Python 和 cURL 示例代码，包含示例结构文件
 
 ## ⚡ 快速上手
@@ -82,6 +84,7 @@ Copy-Item .env.example .env
 
 # 服务端口（外部访问端口）
 HOST_PORT=9876
+MCP_HOST_PORT=9877
 
 # 应用配置
 ENABLE_CACHE=true
@@ -93,6 +96,11 @@ MAX_UPLOAD_SIZE_MB=50
 # 性能配置
 UVICORN_WORKERS=2           # Worker 进程数，建议设为 CPU 核心数
 MAX_CONCURRENT_TASKS=4      # 最大并发 Zeo++ 任务数
+
+# MCP 配置
+MCP_AUTH_TOKEN=             # 生产环境建议设置
+MCP_STREAMABLE_HTTP_PATH=/mcp
+MCP_ALLOWED_PATH_ROOTS=/app/workspace,/shared
 
 # 资源限制
 CPU_LIMIT=2
@@ -175,6 +183,36 @@ curl -X 'POST' \
 
 请将 `/path/to/your/file.cif` 替换为本地结构文件路径。参数（如 `ha=true`）以表单字段 `-F` 形式发送。
 
+### MCP（给 Agent 调用）
+
+启动 MCP 服务（Docker Compose 已内置 `zeopp-mcp`）：
+
+```bash
+docker-compose up -d zeopp-mcp
+```
+
+默认 MCP 地址：`http://localhost:9877/mcp`
+
+以 featherflow 为例，配置 `~/.featherflow/config.json`：
+
+```json
+{
+  "tools": {
+    "mcpServers": {
+      "zeopp": {
+        "url": "http://localhost:9877/mcp",
+        "headers": {
+          "Authorization": "Bearer <MCP_AUTH_TOKEN>"
+        },
+        "toolTimeout": 120
+      }
+    }
+  }
+}
+```
+
+> 注意：featherflow 需使用 `mcpServers`（或 `mcp_servers`），`tools.mcp` 不会生效。
+
 ### 交互式文档
 
 访问 Swagger UI 进行交互式测试：[http://localhost:9876/docs](http://localhost:9876/docs)
@@ -194,6 +232,7 @@ curl -X 'POST' \
 | `/api/v1/cache/stats` | 缓存统计信息 |
 | `/api/v1/cache/cleanup` | 清理过期临时文件 |
 | `/api/v1/cache/clear` | 清除所有缓存 |
+| `MCP 服务: /mcp` | Streamable HTTP MCP 端点（默认在 9877 端口） |
 
 ### 核心几何学分析（v1 API）
 
@@ -227,6 +266,7 @@ curl -X 'POST' \
 - 🧪 **测试套件**：完整的 pytest 单元测试和 API 集成测试
 - 🐳 **Docker 优化**：多阶段构建、非 root 用户、健康检查
 - 📝 **完整文档**：Zeo++ 命令参考和 API 映射指南
+- 🤖 **MCP 服务**：新增 Streamable HTTP MCP 入口与工具集成文档
 
 ### v0.3.0 特性
 - ✅ API 版本控制：所有分析端点使用 `/api/v1/` 前缀

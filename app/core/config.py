@@ -78,6 +78,24 @@ class Settings(BaseSettings):
         default=4,
         description="Maximum concurrent Zeo++ tasks in thread pool"
     )
+
+    # MCP Configuration
+    mcp_auth_token: str = Field(
+        default="",
+        description="Bearer token required for MCP endpoint access (empty disables auth)"
+    )
+    mcp_streamable_http_path: str = Field(
+        default="/mcp",
+        description="Streamable HTTP endpoint path for MCP transport"
+    )
+    mcp_allowed_path_roots: str = Field(
+        default="/app/workspace,/shared",
+        description="Comma-separated allowed root directories for structure_path input"
+    )
+    mcp_max_result_chars: int = Field(
+        default=12000,
+        description="Maximum number of characters returned in MCP tool payload text fields"
+    )
     
     class Config:
         env_file = ".env"
@@ -95,6 +113,16 @@ class Settings(BaseSettings):
     def max_upload_size_bytes(self) -> int:
         """Get max upload size in bytes."""
         return self.max_upload_size_mb * 1024 * 1024
+
+    @property
+    def mcp_allowed_path_roots_list(self) -> List[Path]:
+        """Parse allowed MCP file roots from comma-separated string."""
+        roots: List[Path] = []
+        for item in self.mcp_allowed_path_roots.split(","):
+            candidate = item.strip()
+            if candidate:
+                roots.append(Path(candidate).expanduser().resolve())
+        return roots
 
 
 # Create singleton settings instance
