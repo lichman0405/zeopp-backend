@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp import Context, FastMCP
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -266,7 +266,16 @@ async def _execute_analysis(
     parser: Callable[[str], Dict[str, Any]],
     response_model: Type[BaseModel],
     force_recalculate: bool,
+    ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
+    async def _progress(step: int) -> None:
+        if ctx is not None:
+            try:
+                await ctx.report_progress(step, 4)
+            except Exception:
+                pass
+
+    await _progress(1)  # preparing structure
     try:
         prepared = _prepare_structure(
             task_name=task_name,
@@ -278,6 +287,7 @@ async def _execute_analysis(
     except ValueError as exc:
         return _error(tool_name, str(exc), code="INPUT_VALIDATION_ERROR")
 
+    await _progress(2)  # checking cache / launching execution
     try:
         final_args = zeo_args + [prepared.input_path.name]
         result = await runner.run_command_async(
@@ -287,6 +297,7 @@ async def _execute_analysis(
             extra_identifier=task_name,
             skip_cache=force_recalculate,
         )
+        await _progress(3)  # zeo++ done, parsing
 
         if not result.get("success"):
             return _error(
@@ -324,6 +335,7 @@ async def _execute_analysis(
             )
 
         validated = response_model(**{**parsed, "cached": result.get("cached", False)}).model_dump()
+        await _progress(4)
         return _ok(
             tool_name,
             validated,
@@ -498,6 +510,7 @@ async def tool_pore_diameter(
     filename: str | None = None,
     ha: bool = True,
     force_recalculate: bool = False,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
     zeo_args = ["-res", "result.res"]
     if ha:
@@ -514,6 +527,7 @@ async def tool_pore_diameter(
         parser=parse_res_from_text,
         response_model=PoreDiameterResponse,
         force_recalculate=force_recalculate,
+        ctx=ctx,
     )
 
 
@@ -528,6 +542,7 @@ async def tool_surface_area(
     samples: int = 2000,
     ha: bool = True,
     force_recalculate: bool = False,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
     try:
         _validate_positive("chan_radius", chan_radius)
@@ -556,6 +571,7 @@ async def tool_surface_area(
         parser=parse_sa_from_text,
         response_model=SurfaceAreaResponse,
         force_recalculate=force_recalculate,
+        ctx=ctx,
     )
 
 
@@ -570,6 +586,7 @@ async def tool_accessible_volume(
     samples: int = 50000,
     ha: bool = True,
     force_recalculate: bool = False,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
     try:
         _validate_positive("chan_radius", chan_radius)
@@ -598,6 +615,7 @@ async def tool_accessible_volume(
         parser=parse_vol_from_text,
         response_model=AccessibleVolumeResponse,
         force_recalculate=force_recalculate,
+        ctx=ctx,
     )
 
 
@@ -612,6 +630,7 @@ async def tool_probe_volume(
     samples: int = 50000,
     ha: bool = True,
     force_recalculate: bool = False,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
     try:
         _validate_positive("chan_radius", chan_radius)
@@ -640,6 +659,7 @@ async def tool_probe_volume(
         parser=parse_volpo_from_text,
         response_model=ProbeVolumeResponse,
         force_recalculate=force_recalculate,
+        ctx=ctx,
     )
 
 
@@ -652,6 +672,7 @@ async def tool_channel_analysis(
     probe_radius: float = 1.21,
     ha: bool = True,
     force_recalculate: bool = False,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
     try:
         _validate_positive("probe_radius", probe_radius)
@@ -673,6 +694,7 @@ async def tool_channel_analysis(
         parser=parse_chan_from_text,
         response_model=ChannelAnalysisResponse,
         force_recalculate=force_recalculate,
+        ctx=ctx,
     )
 
 
@@ -684,6 +706,7 @@ async def tool_framework_info(
     filename: str | None = None,
     ha: bool = True,
     force_recalculate: bool = False,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
     zeo_args = ["-strinfo", "result.strinfo"]
     if ha:
@@ -700,6 +723,7 @@ async def tool_framework_info(
         parser=parse_strinfo_from_text,
         response_model=FrameworkInfoResponse,
         force_recalculate=force_recalculate,
+        ctx=ctx,
     )
 
 
@@ -711,6 +735,7 @@ async def tool_open_metal_sites(
     filename: str | None = None,
     ha: bool = True,
     force_recalculate: bool = False,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
     zeo_args = ["-oms", "result.oms"]
     if ha:
@@ -727,6 +752,7 @@ async def tool_open_metal_sites(
         parser=parse_oms_from_text,
         response_model=OpenMetalSitesResponse,
         force_recalculate=force_recalculate,
+        ctx=ctx,
     )
 
 
@@ -740,6 +766,7 @@ async def tool_blocking_spheres(
     samples: int = 50000,
     ha: bool = True,
     force_recalculate: bool = False,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
     try:
         _validate_positive("probe_radius", probe_radius)
@@ -763,6 +790,7 @@ async def tool_blocking_spheres(
         parser=parse_block_from_text,
         response_model=BlockingSpheresResponse,
         force_recalculate=force_recalculate,
+        ctx=ctx,
     )
 
 
@@ -778,7 +806,15 @@ async def tool_pore_size_dist_summary(
     ha: bool = True,
     force_recalculate: bool = False,
     preview_lines: int = 20,
+    ctx: Context = None,
 ) -> Dict[str, Any]:
+    async def _progress(step: int) -> None:
+        if ctx is not None:
+            try:
+                await ctx.report_progress(step, 4)
+            except Exception:
+                pass
+
     try:
         _validate_positive("probe_radius", probe_radius)
         if chan_radius is not None:
@@ -798,6 +834,7 @@ async def tool_pore_size_dist_summary(
             code="INPUT_VALIDATION_ERROR",
         )
 
+    await _progress(1)  # preparing structure
     try:
         prepared = _prepare_structure(
             task_name="pore_size_dist_summary",
@@ -809,6 +846,7 @@ async def tool_pore_size_dist_summary(
     except ValueError as exc:
         return _error("pore_size_dist_summary", str(exc), code="INPUT_VALIDATION_ERROR")
 
+    await _progress(2)  # launching execution
     try:
         output_filename = f"{prepared.input_path.stem}.psd_histo"
         zeo_args = ["-psd", str(effective_chan_radius), str(probe_radius), str(samples)]
@@ -823,6 +861,7 @@ async def tool_pore_size_dist_summary(
             extra_identifier="pore_size_dist_summary",
             skip_cache=force_recalculate,
         )
+        await _progress(3)  # zeo++ done, parsing
 
         if not execution.get("success"):
             return _error(
@@ -859,6 +898,7 @@ async def tool_pore_size_dist_summary(
             "summary": summary,
             "histogram_preview": _truncate_text(preview),
         }
+        await _progress(4)
         return _ok(
             "pore_size_dist_summary",
             result_payload,
