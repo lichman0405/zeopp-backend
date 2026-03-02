@@ -276,6 +276,44 @@ stdio MCP 直接以子进程方式运行，无需 Docker，首次启动自动编
 
 </details>
 
+**或者使用一键脚本**（编译安装 Zeo++ 并自动注册到 featherflow）：
+
+```bash
+# 在项目根目录执行，--lazy 表示仅在首次调用工具时才拉起进程
+bash scripts/add_to_featherflow.sh --lazy
+
+# 带自定义超时
+bash scripts/add_to_featherflow.sh --timeout 600 --lazy
+```
+
+脚本内部执行两步：
+1. `uv run python -m app.mcp.bootstrap` — 检测并编译安装 Zeo++（已安装则跳过）
+2. `featherflow config mcp add zeopp ...` — 写入 `~/.featherflow/config.json`
+
+<details>
+<summary>手动分步执行（等效操作）</summary>
+
+```bash
+# Step 1：编译安装 Zeo++（已安装则秒过）
+uv run python -m app.mcp.bootstrap
+
+# Step 2：注册 MCP server
+featherflow config mcp add zeopp \
+  --command uv \
+  --arg run --arg --project --arg /path/to/zeopp-backend \
+  --arg python --arg -m --arg app.mcp.stdio_main \
+  --timeout 300 \
+  --lazy \
+  --description "Zeo++ porous material analysis: pore diameter, surface area, channel analysis, OMS"
+
+# 查看配置结果（Lazy 列显示 yes/no）
+featherflow config mcp list
+```
+
+> `--lazy`：延迟启动模式，仅在首次调用 zeopp 工具时才拉起进程，不影响 Agent 正常启动速度，推荐用于 Zeo++ 这类按需使用的服务。
+
+</details>
+
 #### 方式 B：HTTP 模式（Docker）
 
 启动 MCP 服务（Docker Compose 已内置 `zeopp-mcp`）：

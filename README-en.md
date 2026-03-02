@@ -273,6 +273,44 @@ stdio MCP runs as a subprocess — no Docker required. Zeo++ is automatically co
 
 </details>
 
+**Or use the one-shot setup script** (compiles Zeo++ then registers it in featherflow):
+
+```bash
+# Run from the project root; --lazy spawns the process only on first tool call
+bash scripts/add_to_featherflow.sh --lazy
+
+# With a custom timeout
+bash scripts/add_to_featherflow.sh --timeout 600 --lazy
+```
+
+The script runs two steps internally:
+1. `uv run python -m app.mcp.bootstrap` — detects and compiles Zeo++ (skipped if already installed)
+2. `featherflow config mcp add zeopp ...` — writes the entry to `~/.featherflow/config.json`
+
+<details>
+<summary>Manual two-step equivalent</summary>
+
+```bash
+# Step 1: compile/install Zeo++ (instant if already present)
+uv run python -m app.mcp.bootstrap
+
+# Step 2: register the MCP server
+featherflow config mcp add zeopp \
+  --command uv \
+  --arg run --arg --project --arg /path/to/zeopp-backend \
+  --arg python --arg -m --arg app.mcp.stdio_main \
+  --timeout 300 \
+  --lazy \
+  --description "Zeo++ porous material analysis: pore diameter, surface area, channel analysis, OMS"
+
+# Verify (the Lazy column shows yes/no)
+featherflow config mcp list
+```
+
+> `--lazy`: deferred-start mode — the process is only spawned when a zeopp tool is first called, so it does not affect agent startup time. Recommended for on-demand services like Zeo++.
+
+</details>
+
 #### Option B: HTTP Mode (Docker)
 
 Launch MCP service (already included as `zeopp-mcp` in Docker Compose):
