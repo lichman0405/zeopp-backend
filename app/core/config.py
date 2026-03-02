@@ -89,9 +89,10 @@ class Settings(BaseSettings):
         description="Streamable HTTP endpoint path for MCP transport"
     )
     mcp_allowed_path_roots: str = Field(
-        default="/app/workspace,/shared",
+        default="",
         description="Comma-separated allowed root directories for structure_path input. "
-        "For stdio mode, set via MCP_ALLOWED_PATH_ROOTS env var (e.g. home dir)."
+        "Empty string disables restriction (stdio mode: bootstrap sets this to $HOME,/tmp). "
+        "For Docker/HTTP mode, set to /app/workspace,/shared or similar."
     )
     mcp_max_result_chars: int = Field(
         default=12000,

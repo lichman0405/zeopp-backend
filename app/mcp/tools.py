@@ -73,8 +73,11 @@ runner = ZeoRunner()
 mcp = FastMCP(
     name="zeopp-backend",
     instructions=(
-        "Tools for porous material analysis using Zeo++. "
-        "Provide exactly one structure source: structure_path, structure_text, or structure_base64."
+        "Zeo++ porous material analysis tools running locally via stdio transport. "
+        "This is a LOCAL server — it has direct access to the local filesystem. "
+        "Prefer structure_path (absolute local file path) when the file already exists on disk. "
+        "Use structure_text to pass file content as a string, or structure_base64 for binary-encoded content. "
+        "Provide exactly one of: structure_path, structure_text, or structure_base64."
     ),
     log_level=_as_log_level(settings.log_level),
 )
@@ -167,7 +170,7 @@ def _sanitize_filename(filename: Optional[str], fallback: str = "structure.cif")
 def _is_under_allowed_roots(candidate: Path) -> bool:
     roots = settings.mcp_allowed_path_roots_list
     if not roots:
-        return False
+        return True  # empty = no restriction, allow all paths
     for root in roots:
         try:
             candidate.relative_to(root)
