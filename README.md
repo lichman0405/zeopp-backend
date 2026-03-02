@@ -3,10 +3,10 @@
     <img src="assets/edit_logo.png" alt="Logo" width="200px">
   </a>
   
-  <h1 align="center">Zeo++ API Service</h1>
+  <h1 align="center">Zeo++ API & MCP Service</h1>
   
   <p align="center">
-    一个生产级的 FastAPI 服务，将强大的 Zeo++ 结构分析功能封装为现代化、容器化的 HTTP 端点。
+    一个生产级的 Zeo++ 结构分析服务，支持 HTTP API 和 stdio MCP 双模式，可直接接入 Agent 工作流。
     <br>
     <a href="./README-en.md"><strong>English</strong></a>
     ·
@@ -40,7 +40,7 @@
 - 🔒 **安全加固**：请求限流、文件验证、请求追踪
 - 📊 **可观测性**：Prometheus 指标端点，请求性能监控
 - 🧪 **测试覆盖**：完整的单元测试和集成测试套件
-- 🤖 **MCP 支持**：提供 Streamable HTTP MCP 服务，可直接接入 featherflow / nanobot 类 Agent
+- 🤖 **MCP 双模式**：同时支持 **stdio**（推荐）和 Streamable HTTP 传输，可直接接入 featherflow / nanobot 类 Agent
 
 ## 📚 详细文档
 
@@ -59,7 +59,9 @@
 
 - Docker 和 Docker Compose  
   或
-- Python 3.9+
+- Python 3.10+ 和 [uv](https://docs.astral.sh/uv/)（推荐）
+  或
+- Python 3.10+ 和 pip
 
 ### 方式一：使用 Docker（推荐）
 
@@ -119,7 +121,45 @@ docker-compose up --build -d
 
 Docker 将自动构建镜像（含 Zeo++ 下载与编译），并启动服务。服务将运行在 `http://localhost:${HOST_PORT}`（默认 9876）。
 
-### 方式二：本地开发（不使用 Docker）
+### 方式二：本地开发（使用 uv，推荐）
+
+[uv](https://docs.astral.sh/uv/) 是 Rust 编写的超快 Python 包管理器，一条命令搞定虚拟环境和依赖。
+
+#### 安装 uv（如尚未安装）
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+#### 克隆项目并安装依赖
+
+```bash
+git clone https://github.com/lichman0405/zeopp-backend.git
+cd zeopp-backend
+uv sync
+```
+
+> `uv sync` 会自动创建 `.venv` 虚拟环境并安装所有依赖，无需手动 `python -m venv`。
+
+#### 配置环境
+
+创建 `.env` 文件，确保 `ZEO_EXEC_PATH` 指向您的 Zeo++ 可执行文件（或使用 stdio 模式自动编译安装）。
+
+#### 运行 API 服务
+
+```bash
+uv run uvicorn app.main:app --reload
+```
+
+#### 运行 stdio MCP 服务
+
+stdio 模式启动时会 **自动检测并编译安装 Zeo++**（需要 `gcc`, `g++`, `make`, `wget`/`curl`）：
+
+```bash
+uv run python -m app.mcp.stdio_main
+```
+
+### 方式三：本地开发（使用 pip）
 
 #### 安装 Zeo++
 
@@ -128,16 +168,16 @@ Docker 将自动构建镜像（含 Zeo++ 下载与编译），并启动服务。
 #### 安装依赖
 
 ```bash
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 Windows PowerShell：
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
@@ -185,6 +225,59 @@ curl -X 'POST' \
 
 ### MCP（给 Agent 调用）
 
+#### 方式 A：stdio 模式（推荐）
+
+stdio MCP 直接以子进程方式运行，无需 Docker，首次启动自动编译安装 Zeo++。
+
+**featherflow 接入配置**（`~/.featherflow/config.json`）：
+
+```json
+{
+  "tools": {
+    "mcpServers": {
+      "zeopp": {
+        "command": "uv",
+        "args": ["run", "--project", "/path/to/zeopp-backend", "python", "-m", "app.mcp.stdio_main"],
+        "toolTimeout": 300,
+        "progressIntervalSeconds": 15
+      }
+    }
+  }
+}
+```
+
+> **配置说明**：
+> - 将 `/path/to/zeopp-backend` 替换为项目实际路径
+> - `toolTimeout`：单次工具调用超时秒数（Zeo++ 大结构计算可能较慢，建议 300–600）
+> - `progressIntervalSeconds`：长时间运行时 featherflow 向用户发送心跳进度的间隔（默认 15s，0 = 关闭）
+>
+> **stdio 模式优势**：MCP 进程运行在宿主机上，`structure_path` 参数可直接传入本地文件路径（如 `/home/user/structures/MOF.cif`），无需使用 `structure_text` 传递文件内容。
+>
+> **首次启动 bootstrap 会自动**：
+> 1. 检查 `gcc`, `g++`, `make`, `wget`/`curl` 是否可用
+> 2. 检测 Zeo++ `network` 二进制是否已存在
+> 3. 如不存在，自动下载源码、编译并安装到 `~/.local/bin/`
+>
+> 系统依赖安装（Ubuntu）：`sudo apt-get install -y build-essential wget curl`
+
+<details>
+<summary>其他 MCP 客户端（Cursor 等）配置格式</summary>
+
+```json
+{
+  "mcpServers": {
+    "zeopp": {
+      "command": "uv",
+      "args": ["run", "--project", "/path/to/zeopp-backend", "python", "-m", "app.mcp.stdio_main"]
+    }
+  }
+}
+```
+
+</details>
+
+#### 方式 B：HTTP 模式（Docker）
+
 启动 MCP 服务（Docker Compose 已内置 `zeopp-mcp`）：
 
 ```bash
@@ -193,7 +286,7 @@ docker-compose up -d zeopp-mcp
 
 默认 MCP 地址：`http://localhost:9877/mcp`
 
-以 featherflow 为例，配置 `~/.featherflow/config.json`：
+featherflow 配置（`~/.featherflow/config.json`）：
 
 ```json
 {
@@ -204,14 +297,26 @@ docker-compose up -d zeopp-mcp
         "headers": {
           "Authorization": "Bearer <MCP_AUTH_TOKEN>"
         },
-        "toolTimeout": 120
+        "toolTimeout": 300,
+        "progressIntervalSeconds": 15
       }
     }
   }
 }
 ```
 
-> 注意：featherflow 需使用 `mcpServers`（或 `mcp_servers`），`tools.mcp` 不会生效。
+> **注意**：HTTP 模式下 MCP 运行在 Docker 容器内，无法访问宿主机文件系统。调用工具时请使用 `structure_text`（传入文件内容）而非 `structure_path`。
+
+#### stdio vs HTTP 模式对比
+
+| 特性 | stdio（推荐） | HTTP（Docker） |
+|------|-------------|---------------|
+| 传输方式 | 子进程 stdin/stdout | HTTP 请求 |
+| 部署 | 无需 Docker，uv 一键启动 | 需要 Docker |
+| 文件访问 | ✅ 直接读取宿主机文件（`structure_path`） | ❌ 需传 `structure_text` 内容 |
+| Zeo++ 安装 | 自动编译安装 | Docker 内自动编译 |
+| featherflow 集成 | `command` + `args` | `url` + `headers` |
+| 适用场景 | Agent 集成（featherflow 推荐） | 独立 HTTP 服务、多用户共享 |
 
 ### 交互式文档
 
@@ -233,6 +338,7 @@ docker-compose up -d zeopp-mcp
 | `/api/v1/cache/cleanup` | 清理过期临时文件 |
 | `/api/v1/cache/clear` | 清除所有缓存 |
 | `MCP 服务: /mcp` | Streamable HTTP MCP 端点（默认在 9877 端口） |
+| `MCP stdio` | stdio 传输 MCP（通过 `python -m app.mcp.stdio_main` 启动） |
 
 ### 核心几何学分析（v1 API）
 
@@ -257,9 +363,15 @@ docker-compose up -d zeopp-mcp
 
 ## 🔄 版本说明
 
-**当前版本：v0.3.1**
+**当前版本：v0.3.2**
 
-### 新增特性（v0.3.1）
+### 新增特性（v0.3.2）
+- 🔌 **stdio MCP 传输**：新增 stdio 模式，与其他 MCP 服务统一交互方式
+- 🛠️ **Zeo++ 自动编译安装**：首次启动自动检测系统依赖、下载并编译 Zeo++
+- 📦 **uv 支持**：推荐使用 `uv` 管理虚拟环境和依赖，显著加速安装
+- 🧩 **MCP 代码重构**：tools 与 transport 解耦，HTTP 和 stdio 共享同一份 tools 代码
+
+### v0.3.1 特性
 - 🔒 **安全增强**：请求限流（slowapi）、文件上传验证、请求 ID 追踪
 - 📊 **Prometheus 监控**：`/metrics` 端点支持监控系统抓取
 - 🗂️ **缓存管理 API**：查看统计、清理临时文件、清除缓存
@@ -277,12 +389,24 @@ docker-compose up -d zeopp-mcp
 
 ### 运行测试
 ```bash
+# 使用 uv
+uv sync --group dev
+uv run pytest tests/ -v
+
+# 或使用 pip
 pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
 ### 开发模式运行
 ```bash
+# 本地 API 服务
+uv run uvicorn app.main:app --reload
+
+# 本地 stdio MCP（自动编译安装 Zeo++）
+uv run python -m app.mcp.stdio_main
+
+# Docker 开发模式
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
 

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
         description="Application name"
     )
     version: str = Field(
-        default="0.3.1",
+        default="0.3.2",
         description="API version"
     )
     
@@ -90,7 +90,8 @@ class Settings(BaseSettings):
     )
     mcp_allowed_path_roots: str = Field(
         default="/app/workspace,/shared",
-        description="Comma-separated allowed root directories for structure_path input"
+        description="Comma-separated allowed root directories for structure_path input. "
+        "For stdio mode, set via MCP_ALLOWED_PATH_ROOTS env var (e.g. home dir)."
     )
     mcp_max_result_chars: int = Field(
         default=12000,

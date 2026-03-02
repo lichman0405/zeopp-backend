@@ -3,10 +3,10 @@
     <img src="assets/edit_logo.png" alt="Logo" width="200px">
   </a>
   
-  <h1 align="center">Zeo++ API Service</h1>
+  <h1 align="center">Zeo++ API & MCP Service</h1>
   
   <p align="center">
-    A production-ready FastAPI service that wraps the powerful Zeo++ structural analysis capabilities into modern, containerized HTTP endpoints.
+    A production-ready Zeo++ structural analysis service supporting both HTTP API and stdio MCP modes for seamless Agent integration.
     <br>
     <a href="./README-en.md"><strong>English</strong></a>
     ·
@@ -40,7 +40,7 @@ This project addresses the pain points of using Zeo++ directly: it transforms co
 - 🔒 **Security Hardened**: Rate limiting, file validation, request tracking
 - 📊 **Observability**: Prometheus metrics endpoint for monitoring
 - 🧪 **Test Coverage**: Comprehensive unit and integration test suite
-- 🤖 **MCP Support**: Streamable HTTP MCP server for agent integration (featherflow / nanobot-style runtimes)
+- 🤖 **Dual MCP Transport**: Supports both **stdio** (recommended) and Streamable HTTP, for agent integration (featherflow / nanobot-style runtimes)
 
 ## 📚 Documentation
 
@@ -59,7 +59,9 @@ For detailed usage, please refer to the following documentation:
 
 - Docker and Docker Compose  
   or
-- Python 3.9+
+- Python 3.10+ and [uv](https://docs.astral.sh/uv/) (recommended)
+  or
+- Python 3.10+ and pip
 
 ### Method 1: Using Docker (Recommended)
 
@@ -116,7 +118,45 @@ docker-compose up --build -d
 
 Docker will automatically build the image (including downloading and compiling Zeo++) and start the service at `http://localhost:${HOST_PORT}` (default: 9876).
 
-### Method 2: Local Development (Without Docker)
+### Method 2: Local Development with uv (Recommended)
+
+[uv](https://docs.astral.sh/uv/) is an ultra-fast Python package manager written in Rust. One command handles virtual environment creation and dependency installation.
+
+#### Install uv (if not already installed)
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+#### Clone and Install
+
+```bash
+git clone https://github.com/lichman0405/zeopp-backend.git
+cd zeopp-backend
+uv sync
+```
+
+> `uv sync` automatically creates a `.venv` virtual environment and installs all dependencies. No manual `python -m venv` needed.
+
+#### Configure Environment
+
+Create a `.env` file and ensure `ZEO_EXEC_PATH` points to your Zeo++ executable (or use stdio mode for automatic compilation).
+
+#### Run API Service
+
+```bash
+uv run uvicorn app.main:app --reload
+```
+
+#### Run stdio MCP Service
+
+The stdio mode will **automatically detect and compile Zeo++** on first launch (requires `gcc`, `g++`, `make`, `wget`/`curl`):
+
+```bash
+uv run python -m app.mcp.stdio_main
+```
+
+### Method 3: Local Development with pip
 
 #### Install Zeo++
 
@@ -125,16 +165,16 @@ Ensure you have installed Zeo++ following the official instructions and can invo
 #### Install Dependencies
 
 ```bash
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 Windows PowerShell:
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
@@ -182,6 +222,59 @@ Replace `/path/to/your/file.cif` with the actual path to your local structure fi
 
 ### MCP (for agent callers)
 
+#### Option A: stdio Mode (Recommended)
+
+stdio MCP runs as a subprocess — no Docker required. Zeo++ is automatically compiled on first launch.
+
+**featherflow integration** (`~/.featherflow/config.json`):
+
+```json
+{
+  "tools": {
+    "mcpServers": {
+      "zeopp": {
+        "command": "uv",
+        "args": ["run", "--project", "/path/to/zeopp-backend", "python", "-m", "app.mcp.stdio_main"],
+        "toolTimeout": 300,
+        "progressIntervalSeconds": 15
+      }
+    }
+  }
+}
+```
+
+> **Config notes**:
+> - Replace `/path/to/zeopp-backend` with the actual project path
+> - `toolTimeout`: seconds before a tool call is cancelled (Zeo++ on large structures can be slow; recommended 300–600)
+> - `progressIntervalSeconds`: heartbeat interval during long-running calls (default 15s, 0 = off)
+>
+> **stdio advantage**: the MCP process runs on the host, so `structure_path` accepts local file paths directly (e.g. `/home/user/structures/MOF.cif`) — no need to pass file content via `structure_text`.
+>
+> **On first launch**, bootstrap will automatically:
+> 1. Check that `gcc`, `g++`, `make`, `wget`/`curl` are available
+> 2. Detect whether the Zeo++ `network` binary exists
+> 3. If not found, download, compile, and install to `~/.local/bin/`
+>
+> System dependency install (Ubuntu): `sudo apt-get install -y build-essential wget curl`
+
+<details>
+<summary>Other MCP clients (Cursor, etc.) config format</summary>
+
+```json
+{
+  "mcpServers": {
+    "zeopp": {
+      "command": "uv",
+      "args": ["run", "--project", "/path/to/zeopp-backend", "python", "-m", "app.mcp.stdio_main"]
+    }
+  }
+}
+```
+
+</details>
+
+#### Option B: HTTP Mode (Docker)
+
 Launch MCP service (already included as `zeopp-mcp` in Docker Compose):
 
 ```bash
@@ -190,7 +283,7 @@ docker-compose up -d zeopp-mcp
 
 Default MCP endpoint: `http://localhost:9877/mcp`
 
-Example featherflow config in `~/.featherflow/config.json`:
+featherflow config (`~/.featherflow/config.json`):
 
 ```json
 {
@@ -201,14 +294,26 @@ Example featherflow config in `~/.featherflow/config.json`:
         "headers": {
           "Authorization": "Bearer <MCP_AUTH_TOKEN>"
         },
-        "toolTimeout": 120
+        "toolTimeout": 300,
+        "progressIntervalSeconds": 15
       }
     }
   }
 }
 ```
 
-> Note: use `mcpServers` (or `mcp_servers`). `tools.mcp` is ignored.
+> **Note**: In HTTP mode the MCP server runs inside a Docker container and cannot access the host filesystem. Use `structure_text` (pass file content) instead of `structure_path` when calling tools.
+
+#### stdio vs HTTP Comparison
+
+| Feature | stdio (Recommended) | HTTP (Docker) |
+|---------|-------------------|---------------|
+| Transport | Subprocess stdin/stdout | HTTP requests |
+| Deployment | No Docker needed, uv one-liner | Requires Docker |
+| File Access | ✅ Direct host filesystem (`structure_path`) | ❌ Must pass `structure_text` content |
+| Zeo++ Install | Auto-compiled on first run | Auto-compiled inside Docker |
+| featherflow Integration | `command` + `args` | `url` + `headers` |
+| Best For | Agent integration (featherflow recommended) | Standalone HTTP service, multi-user sharing |
 
 ### Interactive Documentation
 
@@ -230,6 +335,7 @@ Visit the Swagger UI for interactive testing: [http://localhost:9876/docs](http:
 | `/api/v1/cache/cleanup` | Clean up old temporary files |
 | `/api/v1/cache/clear` | Clear all cache |
 | `MCP service: /mcp` | Streamable HTTP MCP endpoint (default on port 9877) |
+| `MCP stdio` | stdio transport MCP (via `python -m app.mcp.stdio_main`) |
 
 ### Core Geometry Analysis (v1 API)
 
@@ -254,9 +360,15 @@ All endpoints require a `structure_file` uploaded as a file.
 
 ## 🔄 Version Information
 
-**Current Version: v0.3.1**
+**Current Version: v0.3.2**
 
-### New Features (v0.3.1)
+### New Features (v0.3.2)
+- 🔌 **stdio MCP Transport**: New stdio mode, unifying interaction pattern with other MCP services
+- 🛠️ **Zeo++ Auto-Install**: Automatic system dependency check, download, and compilation on first launch
+- 📦 **uv Support**: Recommended `uv` for virtual environment and dependency management (significantly faster)
+- 🧩 **MCP Code Refactor**: Tools decoupled from transport; HTTP and stdio share the same tool codebase
+
+### v0.3.1 Features
 - 🔒 **Security Enhancements**: Rate limiting (slowapi), file upload validation, request ID tracking
 - 📊 **Prometheus Monitoring**: `/metrics` endpoint for monitoring system scraping
 - 🗂️ **Cache Management API**: View stats, cleanup temp files, clear cache
@@ -274,12 +386,24 @@ All endpoints require a `structure_file` uploaded as a file.
 
 ### Run Tests
 ```bash
+# Using uv
+uv sync --group dev
+uv run pytest tests/ -v
+
+# Or using pip
 pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
 ### Development Mode
 ```bash
+# Local API service
+uv run uvicorn app.main:app --reload
+
+# Local stdio MCP (auto-compiles Zeo++)
+uv run python -m app.mcp.stdio_main
+
+# Docker development mode
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
 
