@@ -1,2 +1,2 @@
-# Python 示例依赖
+# Python example dependencies
 requests>=2.28.0

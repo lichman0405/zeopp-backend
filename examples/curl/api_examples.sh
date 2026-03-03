@@ -1,11 +1,11 @@
 #!/bin/bash
 # Zeo++ API cURL Examples
-# cURL 命令行示例
+# cURL command-line examples
 
-# API 基础地址
+# API base URL
 API_BASE="http://localhost:9876"
 
-# 示例文件路径（请根据实际情况修改）
+# Sample file path (modify as needed)
 SAMPLE_FILE="../sample_structures/EDI.cif"
 
 echo "=============================================="
@@ -13,14 +13,14 @@ echo "Zeo++ API cURL Examples"
 echo "=============================================="
 echo ""
 
-# 1. 健康检查
-echo "1. 健康检查 (Health Check)"
+# 1. Health Check
+echo "1. Health Check"
 echo "-------------------------------------------"
 curl -s "${API_BASE}/health" | python -m json.tool
 echo ""
 
-# 2. 孔径计算
-echo "2. 孔径计算 (Pore Diameter)"
+# 2. Pore Diameter
+echo "2. Pore Diameter"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/pore_diameter" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -28,8 +28,8 @@ curl -s -X POST "${API_BASE}/api/v1/pore_diameter" \
     | python -m json.tool
 echo ""
 
-# 3. 表面积计算
-echo "3. 表面积计算 (Surface Area)"
+# 3. Surface Area
+echo "3. Surface Area"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/surface_area" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -40,8 +40,8 @@ curl -s -X POST "${API_BASE}/api/v1/surface_area" \
     | python -m json.tool
 echo ""
 
-# 4. 可及体积计算
-echo "4. 可及体积计算 (Accessible Volume)"
+# 4. Accessible Volume
+echo "4. Accessible Volume"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/accessible_volume" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -52,8 +52,8 @@ curl -s -X POST "${API_BASE}/api/v1/accessible_volume" \
     | python -m json.tool
 echo ""
 
-# 5. 通道分析
-echo "5. 通道分析 (Channel Analysis)"
+# 5. Channel Analysis
+echo "5. Channel Analysis"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/channel_analysis" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -62,8 +62,8 @@ curl -s -X POST "${API_BASE}/api/v1/channel_analysis" \
     | python -m json.tool
 echo ""
 
-# 6. 框架信息
-echo "6. 框架信息 (Framework Info)"
+# 6. Framework Info
+echo "6. Framework Info"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/framework_info" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -71,8 +71,8 @@ curl -s -X POST "${API_BASE}/api/v1/framework_info" \
     | python -m json.tool
 echo ""
 
-# 7. 孔径分布 (下载文件)
-echo "7. 孔径分布 (Pore Size Distribution - File Download)"
+# 7. Pore Size Distribution (File Download)
+echo "7. Pore Size Distribution (File Download)"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/pore_size_dist/download" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -81,11 +81,11 @@ curl -s -X POST "${API_BASE}/api/v1/pore_size_dist/download" \
     -F "samples=50000" \
     -F "ha=true" \
     -o psd_result.txt
-echo "已保存到 psd_result.txt"
+echo "Saved to psd_result.txt"
 echo ""
 
-# 8. 探测体积
-echo "8. 探测体积 (Probe Volume)"
+# 8. Probe Volume
+echo "8. Probe Volume"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/probe_volume" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -95,8 +95,8 @@ curl -s -X POST "${API_BASE}/api/v1/probe_volume" \
     | python -m json.tool
 echo ""
 
-# 9. 阻塞球
-echo "9. 阻塞球 (Blocking Spheres)"
+# 9. Blocking Spheres
+echo "9. Blocking Spheres"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/blocking_spheres" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -105,8 +105,8 @@ curl -s -X POST "${API_BASE}/api/v1/blocking_spheres" \
     | python -m json.tool
 echo ""
 
-# 10. 开放金属位点
-echo "10. 开放金属位点 (Open Metal Sites)"
+# 10. Open Metal Sites
+echo "10. Open Metal Sites"
 echo "-------------------------------------------"
 curl -s -X POST "${API_BASE}/api/v1/open_metal_sites" \
     -F "structure_file=@${SAMPLE_FILE}" \
@@ -115,15 +115,15 @@ curl -s -X POST "${API_BASE}/api/v1/open_metal_sites" \
 echo ""
 
 echo "=============================================="
-echo "所有示例执行完成"
+echo "All examples completed"
 echo "=============================================="
 
-# 额外示例: 强制重新计算 (跳过缓存)
+# Extra example: Force recalculation (skip cache)
 echo ""
 echo "=============================================="
-echo "额外示例: 强制重新计算 (force_recalculate=true)"
+echo "Extra example: Force recalculation (force_recalculate=true)"
 echo "=============================================="
-echo "此参数可跳过缓存，强制执行 Zeo++ 计算:"
+echo "This parameter skips cache and forces Zeo++ computation:"
 echo 'curl -X POST "${API_BASE}/api/v1/pore_diameter" \'
 echo '    -F "structure_file=@structure.cif" \'
 echo '    -F "force_recalculate=true"'

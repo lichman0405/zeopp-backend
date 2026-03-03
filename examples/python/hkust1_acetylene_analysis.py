@@ -1,22 +1,21 @@
 #!/usr/bin/env python3
 """
-HKUST-1 MOF 乙炔吸附性能分析案例
 HKUST-1 MOF Acetylene Adsorption Performance Analysis
 
-本脚本演示如何使用 Zeo++ API 分析 HKUST-1 金属有机框架材料
-对乙炔 (C2H2) 气体的吸附性能。
+This script demonstrates how to use the Zeo++ API to analyze HKUST-1 
+metal-organic framework material for acetylene (C2H2) gas adsorption performance.
 
-HKUST-1 (Cu-BTC, MOF-199) 是一种经典的 MOF 材料，因其：
-- 高比表面积 (~1500-2000 m²/g)
-- 开放金属位点 (Cu²⁺)
-- 多级孔道结构
-而被广泛用于乙炔存储和乙炔/乙烯分离。
+HKUST-1 (Cu-BTC, MOF-199) is a classic MOF material, widely used for 
+acetylene storage and acetylene/ethylene separation due to:
+- High specific surface area (~1500-2000 m²/g)
+- Open metal sites (Cu²⁺)
+- Multi-level pore structure
 
-乙炔分子参数：
-- 动力学直径: 3.3 Å
-- 探针半径: 1.65 Å (直径/2)
+Acetylene molecule parameters:
+- Kinetic diameter: 3.3 Å
+- Probe radius: 1.65 Å (diameter/2)
 
-参考文献：
+References:
 - Chui, S. S.-Y. et al., Science 1999, 283, 1148-1150
 - Xiang, S. et al., Nature Chem. 2009, 1, 368-373 (C2H2 adsorption in MOFs)
 """
@@ -28,26 +27,26 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any
 
 # =============================================================================
-# 配置参数
+# Configuration Parameters
 # =============================================================================
 
 API_BASE_URL = "http://localhost:9876"
 
-# 乙炔 (C2H2) 分子参数
+# Acetylene (C2H2) molecule parameters
 C2H2_KINETIC_DIAMETER = 3.3  # Å
-C2H2_PROBE_RADIUS = 1.65     # Å (动力学直径 / 2)
+C2H2_PROBE_RADIUS = 1.65     # Å (kinetic diameter / 2)
 
-# 氮气 (N2) 分子参数 - 用于 BET 表面积对比
+# Nitrogen (N2) molecule parameters - for BET surface area comparison
 N2_KINETIC_DIAMETER = 3.64   # Å
 N2_PROBE_RADIUS = 1.82       # Å
 
-# HKUST-1 结构文件路径
+# HKUST-1 structure file path
 STRUCTURE_FILE = Path(__file__).parent.parent / "sample_structures" / "HKUST-1.cif"
 
 
 @dataclass
 class AnalysisResult:
-    """分析结果数据类"""
+    """Analysis result data class"""
     success: bool
     data: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
@@ -55,7 +54,7 @@ class AnalysisResult:
 
 def api_request(endpoint: str, params: dict = None) -> AnalysisResult:
     """
-    发送 API 请求
+    Send API request
     """
     if params is None:
         params = {}
@@ -66,7 +65,7 @@ def api_request(endpoint: str, params: dict = None) -> AnalysisResult:
                 f"{API_BASE_URL}/api/v1/{endpoint}",
                 files={"structure_file": (STRUCTURE_FILE.name, f)},
                 data=params,
-                timeout=300  # 增加超时时间，OMS/PSD 计算可能很耗时
+                timeout=300  # Increase timeout, OMS/PSD calculations may take longer
             )
         
         if response.status_code == 200:
@@ -77,13 +76,13 @@ def api_request(endpoint: str, params: dict = None) -> AnalysisResult:
                 error=f"HTTP {response.status_code}: {response.text}"
             )
     except requests.exceptions.ConnectionError:
-        return AnalysisResult(success=False, error=f"无法连接到 {API_BASE_URL}")
+        return AnalysisResult(success=False, error=f"Cannot connect to {API_BASE_URL}")
     except Exception as e:
         return AnalysisResult(success=False, error=str(e))
 
 
 def print_section(title: str):
-    """打印分节标题"""
+    """Print section title"""
     print()
     print("=" * 70)
     print(f"  {title}")
@@ -91,7 +90,7 @@ def print_section(title: str):
 
 
 def print_result(label: str, value: Any, unit: str = ""):
-    """打印结果"""
+    """Print result"""
     if unit:
         print(f"  {label}: {value} {unit}")
     else:
@@ -99,31 +98,31 @@ def print_result(label: str, value: Any, unit: str = ""):
 
 
 # =============================================================================
-# 分析函数
+# Analysis Functions
 # =============================================================================
 
 def analyze_framework_info():
-    """1. 分析框架基本信息"""
-    print_section("1. 框架基本信息 (Framework Info)")
+    """1. Analyze framework basic information"""
+    print_section("1. Framework Basic Information")
     
     result = api_request("framework_info", {"ha": "true"})
     
     if result.success:
         data = result.data
-        print_result("材料名称", "HKUST-1 (Cu-BTC, MOF-199)")
-        print_result("化学式", data.get("formula", "N/A"))
-        print_result("框架数量", data.get("number_of_frameworks", "N/A"))
-        print_result("分子数量", data.get("number_of_molecules", "N/A"))
-        # 注：密度在 accessible_volume 中获取，不在 framework_info 中
+        print_result("Material name", "HKUST-1 (Cu-BTC, MOF-199)")
+        print_result("Chemical formula", data.get("formula", "N/A"))
+        print_result("Number of frameworks", data.get("number_of_frameworks", "N/A"))
+        print_result("Number of molecules", data.get("number_of_molecules", "N/A"))
+        # Note: Density is obtained in accessible_volume, not in framework_info
         return data
     else:
-        print(f"  ❌ 错误: {result.error}")
+        print(f"  ❌ Error: {result.error}")
         return None
 
 
 def analyze_pore_diameter():
-    """2. 分析孔径特性"""
-    print_section("2. 孔径分析 (Pore Diameter)")
+    """2. Analyze pore diameter characteristics"""
+    print_section("2. Pore Diameter Analysis")
     
     result = api_request("pore_diameter", {"ha": "true"})
     
@@ -133,28 +132,28 @@ def analyze_pore_diameter():
         Df = data.get("free_diameter", 0)
         Dif = data.get("included_along_free", 0)
         
-        print_result("最大包含球直径 (Di)", f"{Di:.3f}", "Å")
-        print_result("最大自由球直径 (Df)", f"{Df:.3f}", "Å")
-        print_result("沿自由路径包含球直径 (Dif)", f"{Dif:.3f}", "Å")
+        print_result("Maximum included sphere diameter (Di)", f"{Di:.3f}", "Å")
+        print_result("Maximum free sphere diameter (Df)", f"{Df:.3f}", "Å")
+        print_result("Included sphere diameter along free path (Dif)", f"{Dif:.3f}", "Å")
         
         print()
-        print("  📊 乙炔可及性分析:")
-        print(f"     乙炔动力学直径: {C2H2_KINETIC_DIAMETER} Å")
+        print("  📊 Acetylene accessibility analysis:")
+        print(f"     Acetylene kinetic diameter: {C2H2_KINETIC_DIAMETER} Å")
         
         if Df >= C2H2_KINETIC_DIAMETER:
-            print(f"     ✅ 乙炔可以自由通过孔道 (Df={Df:.2f} > {C2H2_KINETIC_DIAMETER} Å)")
+            print(f"     ✅ Acetylene can freely pass through pores (Df={Df:.2f} > {C2H2_KINETIC_DIAMETER} Å)")
         else:
-            print(f"     ⚠️ 乙炔扩散可能受限 (Df={Df:.2f} < {C2H2_KINETIC_DIAMETER} Å)")
+            print(f"     ⚠️ Acetylene diffusion may be limited (Df={Df:.2f} < {C2H2_KINETIC_DIAMETER} Å)")
         
         return data
     else:
-        print(f"  ❌ 错误: {result.error}")
+        print(f"  ❌ Error: {result.error}")
         return None
 
 
 def analyze_surface_area_for_c2h2():
-    """3. 计算乙炔可及表面积"""
-    print_section("3. 乙炔可及表面积 (C2H2 Accessible Surface Area)")
+    """3. Calculate acetylene accessible surface area"""
+    print_section("3. Acetylene Accessible Surface Area (C2H2)")
     
     result = api_request("surface_area", {
         "chan_radius": str(C2H2_PROBE_RADIUS),
@@ -166,24 +165,24 @@ def analyze_surface_area_for_c2h2():
     if result.success:
         data = result.data
         asa_m2_g = data.get("asa_mass", 0)
-        asa_m2_cm3 = data.get("asa_volume", 0)  # 修复: asa_vol -> asa_volume
+        asa_m2_cm3 = data.get("asa_volume", 0)  # Fix: asa_vol -> asa_volume
         nasa_m2_g = data.get("nasa_mass", 0)
         
-        print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
+        print(f"  Probe radius (C2H2): {C2H2_PROBE_RADIUS} Å")
         print()
-        print_result("可及表面积 (ASA)", f"{asa_m2_g:.2f}", "m²/g")
-        print_result("可及表面积 (ASA)", f"{asa_m2_cm3:.2f}", "m²/cm³")
-        print_result("不可及表面积 (NASA)", f"{nasa_m2_g:.2f}", "m²/g")
+        print_result("Accessible surface area (ASA)", f"{asa_m2_g:.2f}", "m²/g")
+        print_result("Accessible surface area (ASA)", f"{asa_m2_cm3:.2f}", "m²/cm³")
+        print_result("Non-accessible surface area (NASA)", f"{nasa_m2_g:.2f}", "m²/g")
         
         return data
     else:
-        print(f"  ❌ 错误: {result.error}")
+        print(f"  ❌ Error: {result.error}")
         return None
 
 
 def analyze_surface_area_for_n2():
-    """4. 计算氮气可及表面积（对比）"""
-    print_section("4. 氮气可及表面积 - BET 对比 (N2 Accessible Surface Area)")
+    """4. Calculate nitrogen accessible surface area (comparison)"""
+    print_section("4. Nitrogen Accessible Surface Area - BET Comparison (N2)")
     
     result = api_request("surface_area", {
         "chan_radius": str(N2_PROBE_RADIUS),
@@ -196,21 +195,21 @@ def analyze_surface_area_for_n2():
         data = result.data
         asa_m2_g = data.get("asa_mass", 0)
         
-        print(f"  探针半径 (N2): {N2_PROBE_RADIUS} Å")
+        print(f"  Probe radius (N2): {N2_PROBE_RADIUS} Å")
         print()
-        print_result("N2 可及表面积", f"{asa_m2_g:.2f}", "m²/g")
+        print_result("N2 accessible surface area", f"{asa_m2_g:.2f}", "m²/g")
         print()
-        print("  📚 文献参考: HKUST-1 BET 表面积通常为 1500-2000 m²/g")
+        print("  📚 Literature reference: HKUST-1 BET surface area is typically 1500-2000 m²/g")
         
         return data
     else:
-        print(f"  ❌ 错误: {result.error}")
+        print(f"  ❌ Error: {result.error}")
         return None
 
 
 def analyze_accessible_volume_for_c2h2():
-    """5. 计算乙炔可及体积"""
-    print_section("5. 乙炔可及体积 (C2H2 Accessible Volume)")
+    """5. Calculate acetylene accessible volume"""
+    print_section("5. Acetylene Accessible Volume (C2H2)")
     
     result = api_request("accessible_volume", {
         "chan_radius": str(C2H2_PROBE_RADIUS),
@@ -227,32 +226,32 @@ def analyze_accessible_volume_for_c2h2():
         av_fraction = av_data.get("fraction", 0)
         av_cm3_g = av_data.get("mass", 0)
         
-        print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
+        print(f"  Probe radius (C2H2): {C2H2_PROBE_RADIUS} Å")
         print()
-        print_result("框架密度", f"{density:.4f}", "g/cm³")
-        print_result("C2H2 可及体积分数", f"{av_fraction:.4f}", "")
-        print_result("C2H2 可及体积", f"{av_cm3_g:.4f}", "cm³/g")
+        print_result("Framework density", f"{density:.4f}", "g/cm³")
+        print_result("C2H2 accessible volume fraction", f"{av_fraction:.4f}", "")
+        print_result("C2H2 accessible volume", f"{av_cm3_g:.4f}", "cm³/g")
         print()
         
-        # 估算乙炔吸附量
+        # Estimate acetylene uptake
         c2h2_molar_volume = 22.4  # L/mol at STP
         c2h2_density_stp = 1.092  # g/L at STP (26 g/mol / 22.4 L/mol)
         estimated_uptake = av_cm3_g * c2h2_density_stp * 1000  # mg/g
         estimated_uptake_cc = av_cm3_g * 1000 / c2h2_molar_volume * 22.4  # cc(STP)/g
         
-        print("  📊 乙炔吸附能力估算 (理论最大值):")
-        print_result("     估算吸附量", f"{estimated_uptake:.1f}", "mg/g")
-        print_result("     估算吸附量", f"{estimated_uptake_cc:.1f}", "cc(STP)/g")
+        print("  📊 Estimated acetylene adsorption capacity (theoretical maximum):")
+        print_result("     Estimated uptake", f"{estimated_uptake:.1f}", "mg/g")
+        print_result("     Estimated uptake", f"{estimated_uptake_cc:.1f}", "cc(STP)/g")
         
         return data
     else:
-        print(f"  ❌ 错误: {result.error}")
+        print(f"  ❌ Error: {result.error}")
         return None
 
 
 def analyze_channel():
-    """6. 分析通道特性"""
-    print_section("6. 通道分析 (Channel Analysis)")
+    """6. Analyze channel characteristics"""
+    print_section("6. Channel Analysis")
     
     result = api_request("channel_analysis", {
         "probe_radius": str(C2H2_PROBE_RADIUS),
@@ -266,31 +265,31 @@ def analyze_channel():
         free_diameter = data.get("free_diameter", 0)
         included_along_free = data.get("included_along_free", 0)
         
-        print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
+        print(f"  Probe radius (C2H2): {C2H2_PROBE_RADIUS} Å")
         print()
-        print_result("通道维度", dimension, "D")
-        print_result("通道包含球直径 (Di)", f"{included_diameter:.3f}", "Å")
-        print_result("通道自由球直径 (Df)", f"{free_diameter:.3f}", "Å")
-        print_result("沿自由路径包含球直径 (Dif)", f"{included_along_free:.3f}", "Å")
+        print_result("Channel dimensionality", dimension, "D")
+        print_result("Channel included sphere diameter (Di)", f"{included_diameter:.3f}", "Å")
+        print_result("Channel free sphere diameter (Df)", f"{free_diameter:.3f}", "Å")
+        print_result("Included sphere diameter along free path (Dif)", f"{included_along_free:.3f}", "Å")
         
         if dimension == 3:
-            print("  ✅ 3D 互连通道 - 有利于乙炔分子快速扩散")
+            print("  ✅ 3D interconnected channels - facilitates rapid acetylene diffusion")
         elif dimension == 2:
-            print("  ⚠️ 2D 层状通道 - 乙炔扩散可能受限于层间")
+            print("  ⚠️ 2D layered channels - acetylene diffusion may be limited between layers")
         elif dimension == 1:
-            print("  ⚠️ 1D 线性通道 - 乙炔扩散为单向")
+            print("  ⚠️ 1D linear channels - acetylene diffusion is unidirectional")
         else:
-            print("  ❌ 无连通通道 - 乙炔分子无法进入孔道")
+            print("  ❌ No connected channels - acetylene molecules cannot enter pores")
         
         return data
     else:
-        print(f"  ❌ 错误: {result.error}")
+        print(f"  ❌ Error: {result.error}")
         return None
 
 
 def analyze_open_metal_sites():
-    """7. 分析开放金属位点"""
-    print_section("7. 开放金属位点 (Open Metal Sites)")
+    """7. Analyze open metal sites"""
+    print_section("7. Open Metal Sites")
     
     result = api_request("open_metal_sites", {"ha": "true"})
     
@@ -298,30 +297,30 @@ def analyze_open_metal_sites():
         data = result.data
         oms_count = data.get("open_metal_sites_count", 0)
         
-        print_result("开放金属位点数量", oms_count)
+        print_result("Open metal sites count", oms_count)
         print()
         
         if oms_count > 0:
-            print("  📊 开放金属位点对乙炔吸附的影响:")
-            print("     ✅ Cu²⁺ 开放位点可与乙炔的 π 电子形成配位作用")
-            print("     ✅ 增强乙炔吸附焓 (通常 25-35 kJ/mol)")
-            print("     ✅ 提高乙炔/乙烯分离选择性")
+            print("  📊 Impact of open metal sites on acetylene adsorption:")
+            print("     ✅ Cu²⁺ open sites can form coordination with acetylene π electrons")
+            print("     ✅ Enhances acetylene adsorption enthalpy (typically 25-35 kJ/mol)")
+            print("     ✅ Improves acetylene/ethylene separation selectivity")
         else:
-            print("  ⚠️ 未检测到开放金属位点")
-            print("     (可能是结构问题或检测参数需调整)")
+            print("  ⚠️ No open metal sites detected")
+            print("     (May be structural issue or detection parameters need adjustment)")
         
         return data
     else:
-        print(f"  ❌ 错误: {result.error}")
+        print(f"  ❌ Error: {result.error}")
         return None
 
 
 def analyze_pore_size_distribution():
-    """8. 分析孔径分布"""
-    print_section("8. 孔径分布 (Pore Size Distribution)")
+    """8. Analyze pore size distribution"""
+    print_section("8. Pore Size Distribution")
     
-    # 注意：pore_size_dist/download 返回的是文件，需要特殊处理
-    print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
+    # Note: pore_size_dist/download returns a file, requires special handling
+    print(f"  Probe radius (C2H2): {C2H2_PROBE_RADIUS} Å")
     print()
     
     try:
@@ -335,15 +334,15 @@ def analyze_pore_size_distribution():
                     "samples": "50000",
                     "ha": "true"
                 },
-                timeout=300  # 增加超时时间，PSD 计算可能很耗时
+                timeout=300  # Increase timeout, PSD calculation may take longer
             )
         
         if response.status_code == 200:
-            # 解析返回的直方图文件内容
+            # Parse returned histogram file content
             content = response.text
             lines = content.strip().split('\n')
             
-            # 解析直方图数据 (跳过注释行)
+            # Parse histogram data (skip comment lines)
             histogram = []
             for line in lines:
                 line = line.strip()
@@ -361,40 +360,40 @@ def analyze_pore_size_distribution():
             if histogram:
                 total_count = sum(h["count"] for h in histogram)
                 
-                # 分类统计 (直径单位是 Å)
+                # Category statistics (diameter unit is Å)
                 micropore = sum(h["count"] for h in histogram if h["diameter"] < 20)
                 mesopore = sum(h["count"] for h in histogram if 20 <= h["diameter"] < 500)
                 
                 micropore_pct = micropore / total_count * 100 if total_count > 0 else 0
                 mesopore_pct = mesopore / total_count * 100 if total_count > 0 else 0
                 
-                print(f"  孔径分布统计 (共 {len(histogram)} 个数据点):")
-                print_result("     微孔占比 (<2nm)", f"{micropore_pct:.1f}", "%")
-                print_result("     介孔占比 (2-50nm)", f"{mesopore_pct:.1f}", "%")
+                print(f"  Pore size distribution statistics ({len(histogram)} data points):")
+                print_result("     Micropore ratio (<2nm)", f"{micropore_pct:.1f}", "%")
+                print_result("     Mesopore ratio (2-50nm)", f"{mesopore_pct:.1f}", "%")
                 
-                # 找主要孔径
+                # Find primary pore size
                 max_bin = max(histogram, key=lambda x: x["count"])
-                print_result("     主要孔径范围", f"{max_bin['diameter']:.2f}", "Å")
+                print_result("     Primary pore diameter range", f"{max_bin['diameter']:.2f}", "Å")
                 
                 return {"histogram": histogram}
             else:
-                print("  ⚠️ 未能解析孔径分布数据")
+                print("  ⚠️ Failed to parse pore size distribution data")
                 return None
         else:
-            print(f"  ❌ 错误: HTTP {response.status_code}: {response.text[:200]}")
+            print(f"  ❌ Error: HTTP {response.status_code}: {response.text[:200]}")
             return None
             
     except requests.exceptions.ConnectionError:
-        print(f"  ❌ 无法连接到 {API_BASE_URL}")
+        print(f"  ❌ Cannot connect to {API_BASE_URL}")
         return None
     except Exception as e:
-        print(f"  ❌ 错误: {str(e)}")
+        print(f"  ❌ Error: {str(e)}")
         return None
 
 
 def analyze_blocking_spheres():
-    """9. 分析阻塞球"""
-    print_section("9. 阻塞球分析 (Blocking Spheres)")
+    """9. Analyze blocking spheres"""
+    print_section("9. Blocking Spheres Analysis")
     
     result = api_request("blocking_spheres", {
         "probe_radius": str(C2H2_PROBE_RADIUS),
@@ -407,88 +406,89 @@ def analyze_blocking_spheres():
         pockets = data.get("pockets", 0)
         nodes_assigned = data.get("nodes_assigned", 0)
         
-        print(f"  探针半径 (C2H2): {C2H2_PROBE_RADIUS} Å")
+        print(f"  Probe radius (C2H2): {C2H2_PROBE_RADIUS} Å")
         print()
-        print_result("识别通道数量", channels)
-        print_result("识别口袋数量", pockets)
-        print_result("已分配节点数", nodes_assigned)
+        print_result("Identified channels count", channels)
+        print_result("Identified pockets count", pockets)
+        print_result("Assigned nodes count", nodes_assigned)
         
         if channels == 0 and pockets == 0:
-            print("  ✅ 无阻塞区域 - 所有孔道对乙炔完全可及")
+            print("  ✅ No blocking regions - all pores are fully accessible to acetylene")
         else:
-            print("  ⚠️ 检测到阻塞区域")
-            print("     可结合 raw 字段进一步查看详情")
+            print("  ⚠️ Blocking regions detected")
+            print("     See raw field for further details")
         
         return data
     else:
-        print(f"  ❌ 错误: {result.error}")
+        print(f"  ❌ Error: {result.error}")
         return None
 
 
 def print_summary():
-    """打印分析总结"""
-    print_section("分析总结 - HKUST-1 乙炔吸附性能评估")
+    """Print analysis summary"""
+    print_section("Analysis Summary - HKUST-1 Acetylene Adsorption Performance Evaluation")
     
     print("""
-  HKUST-1 是用于乙炔吸附和分离的优秀 MOF 材料，原因如下：
+    HKUST-1 is an excellent MOF material for acetylene adsorption and separation
+    for the following reasons:
   
-  ✅ 结构优势:
-     - 高比表面积 (~1500-2000 m²/g) 提供大量吸附位点
-     - 3D 互连孔道网络利于气体分子快速扩散
-     - 多级孔结构（大笼 ~9Å，小笼 ~5Å）
+  ✅ Structural advantages:
+      - High specific surface area (~1500-2000 m²/g) provides numerous adsorption sites
+      - 3D interconnected pore network facilitates rapid gas molecule diffusion
+      - Multi-level pore structure (large cage ~9Å, small cage ~5Å)
   
-  ✅ 化学优势:
-     - 开放 Cu²⁺ 金属位点与乙炔 π 电子配位
-     - 高乙炔吸附焓 (~25-35 kJ/mol)
-     - 优异的 C2H2/C2H4 分离选择性 (~2-4)
-     - 优异的 C2H2/CO2 分离选择性
+  ✅ Chemical advantages:
+      - Open Cu²⁺ metal sites coordinate with acetylene π electrons
+      - High acetylene adsorption enthalpy (~25-35 kJ/mol)
+      - Excellent C2H2/C2H4 separation selectivity (~2-4)
+      - Excellent C2H2/CO2 separation selectivity
   
-  📚 文献报道的 HKUST-1 乙炔吸附性能:
-     - 乙炔吸附量: ~200 cm³(STP)/g @ 298K, 1bar
-     - C2H2/C2H4 选择性: ~2.5
-     - 吸附焓: ~32 kJ/mol
+  📚 Literature-reported HKUST-1 acetylene adsorption performance:
+      - Acetylene uptake: ~200 cm³(STP)/g @ 298K, 1bar
+      - C2H2/C2H4 selectivity: ~2.5
+      - Adsorption enthalpy: ~32 kJ/mol
   
-  参考文献:
+    References:
   - Xiang, S. et al., Nature Chem. 2009, 1, 368-373
   - He, Y. et al., Chem. Soc. Rev. 2014, 43, 5657-5678
 """)
 
 
 def main():
-    """主函数"""
+    """Main function"""
     print()
     print("╔══════════════════════════════════════════════════════════════════════╗")
-    print("║     HKUST-1 MOF 乙炔 (C₂H₂) 吸附性能分析                              ║")
-    print("║     Zeo++ API 全功能演示案例                                          ║")
+    print("║     HKUST-1 MOF Acetylene (C₂H₂) Adsorption Performance Analysis    ║")
+    print("║     Zeo++ API Full Feature Demonstration                            ║")
     print("╚══════════════════════════════════════════════════════════════════════╝")
     
-    # 检查结构文件
+    # Check structure file
     if not STRUCTURE_FILE.exists():
-        print(f"\n❌ 错误: 找不到结构文件 {STRUCTURE_FILE}")
-        print("   请确保 HKUST-1.cif 文件存在于 sample_structures 目录")
+        print(f"\n❌ Error: Cannot find structure file {STRUCTURE_FILE}")
+        print("   Please ensure HKUST-1.cif file exists in sample_structures directory")
         sys.exit(1)
     
-    print(f"\n📂 结构文件: {STRUCTURE_FILE}")
-    print(f"🔗 API 地址: {API_BASE_URL}")
+    print(f"\n📂 Structure file: {STRUCTURE_FILE}")
+    print(f"🔗 API address: {API_BASE_URL}")
     
-    # 检查 API 服务
+    # Check API service
     try:
         response = requests.get(f"{API_BASE_URL}/health", timeout=5)
         if response.status_code == 200:
-            print("✅ API 服务正常运行")
+            print("✅ API service is running normally")
         else:
-            print(f"⚠️ API 服务返回状态码: {response.status_code}")
+            print(f"⚠️ API service returned status code: {response.status_code}")
     except requests.exceptions.ConnectionError:
-        print(f"\n❌ 无法连接到 API 服务 {API_BASE_URL}")
-        print("   请先启动服务: docker-compose up -d")
+        print(f"\n❌ Cannot connect to API service {API_BASE_URL}")
+        print("   Please start the service first: docker-compose up -d")
         sys.exit(1)
     
-    # 执行所有分析
+    # Execute all analyses
     print("\n" + "─" * 70)
-    print("  开始分析 HKUST-1 的乙炔吸附相关性质...")
+    print("  Starting analysis of HKUST-1 acetylene adsorption properties...")
     print("─" * 70)
     
-    # 1-9: 执行所有分析
+    # 1-9: Execute all analyses
     analyze_framework_info()
     analyze_pore_diameter()
     analyze_surface_area_for_c2h2()
@@ -499,11 +499,11 @@ def main():
     analyze_pore_size_distribution()
     analyze_blocking_spheres()
     
-    # 打印总结
+    # Print summary
     print_summary()
     
     print("\n" + "═" * 70)
-    print("  分析完成！所有 Zeo++ API 功能已验证。")
+    print("  Analysis complete! All Zeo++ API features verified.")
     print("═" * 70 + "\n")
 
 

@@ -1,51 +1,51 @@
-# Examples 示例目录
+# Examples
 
-本目录包含 Zeo++ API 的完整使用示例。
+This directory contains complete usage examples for Zeo++ API.
 
-## 目录结构
+## Directory Structure
 
 ```
 examples/
-├── README.md                         # 本文件
-├── sample_structures/                # 示例结构文件
-│   ├── EDI.cif                      # EDI 沸石结构
-│   └── HKUST-1.cif                  # HKUST-1 MOF 结构
-├── python/                           # Python 示例
-│   ├── basic_usage.py               # 基础 API 调用
-│   ├── batch_analysis.py            # 批量分析脚本
-│   ├── hkust1_acetylene_analysis.py # ⭐ MOF 乙炔吸附案例
-│   └── requirements.txt             # Python 依赖
-└── curl/                             # cURL 示例
-    ├── api_examples.sh              # Linux/Mac 脚本
-    └── api_examples.bat             # Windows 批处理
+├── README.md                         # This file
+├── sample_structures/                # Example structure files
+│   ├── EDI.cif                      # EDI zeolite structure
+│   └── HKUST-1.cif                  # HKUST-1 MOF structure
+├── python/                           # Python examples
+│   ├── basic_usage.py               # Basic API calls
+│   ├── batch_analysis.py            # Batch analysis script
+│   ├── hkust1_acetylene_analysis.py # ⭐ MOF acetylene adsorption case study
+│   └── requirements.txt             # Python dependencies
+└── curl/                             # cURL examples
+    ├── api_examples.sh              # Linux/Mac script
+    └── api_examples.bat             # Windows batch file
 ```
 
-## 快速开始
+## Quick Start
 
-### 1. 确保 API 服务已启动
+### 1. Ensure API Service is Running
 
 ```bash
-# 在项目根目录
+# In project root directory
 docker-compose up -d
 
-# 检查服务状态
+# Check service status
 curl http://localhost:9876/health
 ```
 
-### 2. Python 示例
+### 2. Python Examples
 
 ```bash
 cd examples/python
 pip install -r requirements.txt
 
-# 基础示例 - 演示所有 API 端点
+# Basic example - demonstrates all API endpoints
 python basic_usage.py
 
-# 批量分析 - 处理多个结构文件
+# Batch analysis - process multiple structure files
 python batch_analysis.py ../sample_structures output.csv
 ```
 
-### 3. cURL 示例
+### 3. cURL Examples
 
 **Linux/Mac:**
 ```bash
@@ -60,119 +60,119 @@ cd examples\curl
 api_examples.bat
 ```
 
-## 示例文件说明
+## Example Files Description
 
-### Python 示例
+### Python Examples
 
-| 文件 | 说明 |
-|------|------|
-| `basic_usage.py` | 包含所有 API 端点的调用示例，适合学习 API 用法 |
-| `batch_analysis.py` | 批量处理多个结构文件，支持并发请求，导出 CSV 结果 |
-| `hkust1_acetylene_analysis.py` | ⭐ **完整案例**：用 HKUST-1 MOF 分析乙炔吸附性能 |
+| File | Description |
+|------|-------------|
+| `basic_usage.py` | Contains examples of all API endpoint calls, suitable for learning API usage |
+| `batch_analysis.py` | Batch process multiple structure files, supports concurrent requests, export CSV results |
+| `hkust1_acetylene_analysis.py` | ⭐ **Complete case study**: Analyze acetylene adsorption performance using HKUST-1 MOF |
 
-### ⭐ 重点案例：HKUST-1 乙炔吸附分析
+### ⭐ Featured Case: HKUST-1 Acetylene Adsorption Analysis
 
-`python/hkust1_acetylene_analysis.py` 是一个完整的应用案例，演示如何使用 Zeo++ API 分析 MOF 材料对乙炔 (C₂H₂) 的吸附性能。
+`python/hkust1_acetylene_analysis.py` is a complete application example demonstrating how to use Zeo++ API to analyze MOF material's acetylene (C₂H₂) adsorption performance.
 
-**运行方式：**
+**Run:**
 ```bash
 cd examples/python
 python hkust1_acetylene_analysis.py
 ```
 
-**案例涵盖的 API 功能：**
-1. `/api/v1/framework_info` - 获取框架基本信息
-2. `/api/v1/pore_diameter` - 分析孔径，判断乙炔可及性
-3. `/api/v1/surface_area` - 计算乙炔可及表面积（探针半径 1.65Å）
-4. `/api/v1/surface_area` - 计算氮气可及表面积（对比 BET）
-5. `/api/v1/accessible_volume` - 计算乙炔可及体积，估算吸附量
-6. `/api/v1/channel_analysis` - 分析通道维度和连通性
-7. `/api/v1/open_metal_sites` - 检测开放金属位点 (Cu²⁺)
-8. `/api/v1/pore_size_dist/download` - 分析孔径分布（返回文件）
-9. `/api/v1/blocking_spheres` - 检测阻塞区域
+**Covered API Functions:**
+1. `/api/v1/framework_info` - Get framework basic information
+2. `/api/v1/pore_diameter` - Analyze pore diameter, determine acetylene accessibility
+3. `/api/v1/surface_area` - Calculate acetylene accessible surface area (probe radius 1.65Å)
+4. `/api/v1/surface_area` - Calculate nitrogen accessible surface area (BET comparison)
+5. `/api/v1/accessible_volume` - Calculate acetylene accessible volume, estimate adsorption capacity
+6. `/api/v1/channel_analysis` - Analyze channel dimensions and connectivity
+7. `/api/v1/open_metal_sites` - Detect open metal sites (Cu²⁺)
+8. `/api/v1/pore_size_dist/download` - Analyze pore size distribution (returns file)
+9. `/api/v1/blocking_spheres` - Detect blocking regions
 
-**输出示例：**
+**Output Example:**
 ```
 ╔══════════════════════════════════════════════════════════════════════╗
-║     HKUST-1 MOF 乙炔 (C₂H₂) 吸附性能分析                              ║
+║     HKUST-1 MOF Acetylene (C₂H₂) Adsorption Performance Analysis     ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
 ======================================================================
-  1. 框架基本信息 (Framework Info)
+  1. Framework Basic Information (Framework Info)
 ======================================================================
-  材料名称: HKUST-1 (Cu-BTC, MOF-199)
-  化学式: C18 H6 Cu3 O12
+  Material Name: HKUST-1 (Cu-BTC, MOF-199)
+  Chemical Formula: C18 H6 Cu3 O12
   ...
 
 ======================================================================
-  5. 乙炔可及体积 (C2H2 Accessible Volume)
+  5. Acetylene Accessible Volume (C2H2 Accessible Volume)
 ======================================================================
-  探针半径 (C2H2): 1.65 Å
-  C2H2 可及体积: 0.75 cm³/g
+  Probe Radius (C2H2): 1.65 Å
+  C2H2 Accessible Volume: 0.75 cm³/g
   
-  📊 乙炔吸附能力估算 (理论最大值):
-     估算吸附量: 200 cc(STP)/g
+  📊 Estimated Acetylene Adsorption Capacity (theoretical maximum):
+     Estimated Uptake: 200 cc(STP)/g
 ```
 
-### 示例结构文件
+### Example Structure Files
 
 #### sample_structures/EDI.cif
 
-EDI（Edingtonite）沸石结构，晶系为四方晶系，包含 Si 和 O 原子。
+EDI (Edingtonite) zeolite structure, tetragonal crystal system, contains Si and O atoms.
 
-结构特征：
-- 晶胞参数: a=b=9.550Å, c=6.520Å
-- 空间群: P-421m
-- 典型孔径: ~3Å
-- 适合测试所有 API 端点
+Structural characteristics:
+- Unit cell parameters: a=b=9.550Å, c=6.520Å
+- Space group: P-421m
+- Typical pore diameter: ~3Å
+- Suitable for testing all API endpoints
 
 #### sample_structures/HKUST-1.cif
 
-HKUST-1（又称 Cu-BTC、MOF-199）是一种经典的金属有机框架（MOF）材料。
+HKUST-1 (also known as Cu-BTC, MOF-199) is a classic metal-organic framework (MOF) material.
 
-**应用场景：**
-- 🔹 **乙炔 (C₂H₂) 吸附与分离** - HKUST-1 对乙炔有优异的选择性吸附能力
-- 🔹 **CO₂ 捕获** - 开放金属位点增强 CO₂ 吸附
-- 🔹 **H₂ 存储** - 高比表面积有利于氢气存储
-- 🔹 **天然气纯化** - 分离 CH₄ 和杂质气体
-- 🔹 **催化反应** - Cu²⁺ 开放位点可作为催化活性中心
+**Application Scenarios:**
+- 🔹 **Acetylene (C₂H₂) Adsorption & Separation** - HKUST-1 has excellent selective adsorption capacity for acetylene
+- 🔹 **CO₂ Capture** - Open metal sites enhance CO₂ adsorption
+- 🔹 **H₂ Storage** - High specific surface area benefits hydrogen storage
+- 🔹 **Natural Gas Purification** - Separation of CH₄ and impurity gases
+- 🔹 **Catalytic Reactions** - Cu²⁺ open sites can serve as catalytic active centers
 
-**结构特征：**
-- 化学式: Cu₃(BTC)₂ (BTC = 苯-1,3,5-三羧酸)
-- 晶胞参数: a=b=c=26.343Å（立方晶系）
-- 空间群: Fm-3m
-- BET 比表面积: ~1500-2000 m²/g
-- 孔体积: ~0.75 cm³/g
-- 包含开放金属位点 (Open Metal Sites)
+**Structural Characteristics:**
+- Chemical Formula: Cu₃(BTC)₂ (BTC = benzene-1,3,5-tricarboxylic acid)
+- Unit Cell Parameters: a=b=c=26.343Å (cubic crystal system)
+- Space Group: Fm-3m
+- BET Specific Surface Area: ~1500-2000 m²/g
+- Pore Volume: ~0.75 cm³/g
+- Contains Open Metal Sites
 
-**参考文献：**
+**References:**
 - Chui, S. S.-Y. et al., Science 1999, 283, 1148-1150
 - COD ID: 2300380
 
-## 注意事项
+## Notes
 
-- 确保 Zeo++ API 服务已启动（默认 http://localhost:9876）
-- 如果使用不同端口，请修改脚本中的 `API_BASE_URL`
-- 批量分析脚本支持 `.cif`, `.cssr`, `.v1`, `.arc`, `.xyz`, `.pdb`, `.cuc` 格式
+- Ensure Zeo++ API service is running (default http://localhost:9876)
+- If using a different port, modify `API_BASE_URL` in scripts
+- Batch analysis script supports `.cif`, `.cssr`, `.v1`, `.arc`, `.xyz`, `.pdb`, `.cuc` formats
 
-## 高级功能
+## Advanced Features
 
-### 强制重新计算 (跳过缓存)
+### Force Recalculation (Skip Cache)
 
-所有 API 端点支持 `force_recalculate` 参数来跳过缓存：
+All API endpoints support the `force_recalculate` parameter to skip cache:
 
 ```bash
-# 正常调用 (使用缓存)
+# Normal call (use cache)
 curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
     -F "structure_file=@HKUST-1.cif"
 
-# 强制重新计算 (跳过缓存)
+# Force recalculation (skip cache)
 curl -X POST "http://localhost:9876/api/v1/pore_diameter" \
     -F "structure_file=@HKUST-1.cif" \
     -F "force_recalculate=true"
 ```
 
-使用场景：
-- 调试时需要验证 Zeo++ 输出
-- 怀疑缓存结果不正确
-- 需要确保获取最新计算结果
+Use Cases:
+- Need to verify Zeo++ output during debugging
+- Suspect cached results are incorrect
+- Need to ensure getting latest calculation results
