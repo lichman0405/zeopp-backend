@@ -65,7 +65,7 @@ class ConsoleManager:
         custom_theme = Theme({
             "logging.level.success": "bold green"
         })
-        self._console = Console(theme=custom_theme)
+        self._console = Console(theme=custom_theme, stderr=True)
         self._logger = self._setup_logger()
         self._initialized = True
 
