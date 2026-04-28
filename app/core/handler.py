@@ -81,6 +81,18 @@ async def process_zeo_request(
             error_detail = f"Zeo++ exited with code {result['exit_code']}."
             stderr_content = result.get("stderr", "No stderr output.")
             logger.display_error_panel(f"{task_name} Failed", f"{error_detail}\n\n{stderr_content}")
+            if result["exit_code"] == 124:
+                # Map subprocess timeout (exit_code 124) to HTTP 504 Gateway
+                # Timeout so callers can distinguish a long-running compute
+                # from a real Zeo++ failure.
+                raise HTTPException(
+                    status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                    detail={
+                        "message": f"Zeo++ execution timed out for {task_name}",
+                        "timeout_seconds": settings.zeo_command_timeout_seconds,
+                        "stderr": stderr_content,
+                    },
+                )
             raise ZeoppExecutionError(
                 message=f"Zeo++ execution failed for {task_name}",
                 exit_code=result['exit_code'],

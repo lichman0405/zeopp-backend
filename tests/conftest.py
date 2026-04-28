@@ -84,23 +84,58 @@ def sample_res_output():
 
 @pytest.fixture
 def sample_sa_output():
-    """Sample .sa file output from Zeo++."""
-    return """@ test.sa Unitcell_volume: 307.484   Density: 1.62239   ASA_A^2: 60.7713 ASA_m^2/cm^3: 1976.4 ASA_m^2/g: 1218.21
-NASA_A^2: 0 NASA_m^2/cm^3: 0 NASA_m^2/g: 0"""
+    """Sample .sa file output from Zeo++ (real single-line @-format)."""
+    return (
+        "@ test.sa Unitcell_volume: 307.484   Density: 1.62239   "
+        "ASA_A^2: 60.7713 ASA_m^2/cm^3: 1976.4 ASA_m^2/g: 1218.21 "
+        "NASA_A^2: 0 NASA_m^2/cm^3: 0 NASA_m^2/g: 0\n"
+    )
+
+
+@pytest.fixture
+def sample_sa_output_extended():
+    """Sample .sa output from newer Zeo++ that appends channel/pocket rows."""
+    return (
+        "@ test.sa Unitcell_volume: 307.484 Density: 1.62239 "
+        "ASA_A^2: 60.7713 ASA_m^2/cm^3: 1976.4 ASA_m^2/g: 1218.21 "
+        "NASA_A^2: 12.34 NASA_m^2/cm^3: 401.5 NASA_m^2/g: 247.5\n"
+        "Number_of_channels: 1 Channel_surface_area_A^2: 60.7713\n"
+        "Number_of_pockets: 2\n"
+        "Pocket_surface_area_A^2: 7.5 4.84\n"
+    )
 
 
 @pytest.fixture
 def sample_vol_output():
-    """Sample .vol file output from Zeo++."""
-    return """@ test.vol Unitcell_volume: 307.484   Density: 1.62239   AV_A^3: 22.6493 AV_Volume_fraction: 0.07366 AV_cm^3/g: 0.0454022
-NAV_A^3: 0 NAV_Volume_fraction: 0 NAV_cm^3/g: 0"""
+    """Sample .vol file output from Zeo++ (real single-line @-format)."""
+    return (
+        "@ test.vol Unitcell_volume: 307.484   Density: 1.62239   "
+        "AV_A^3: 22.6493 AV_Volume_fraction: 0.07366 AV_cm^3/g: 0.0454022 "
+        "NAV_A^3: 0 NAV_Volume_fraction: 0 NAV_cm^3/g: 0\n"
+    )
+
+
+@pytest.fixture
+def sample_vol_output_extended():
+    """Sample .vol output from newer Zeo++ that appends channel/pocket rows."""
+    return (
+        "@ test.vol Unitcell_volume: 307.484 Density: 1.62239 "
+        "AV_A^3: 22.6493 AV_Volume_fraction: 0.07366 AV_cm^3/g: 0.0454022 "
+        "NAV_A^3: 1.5 NAV_Volume_fraction: 0.0049 NAV_cm^3/g: 0.003\n"
+        "Number_of_channels: 1 Channel_volume_A^3: 22.6493\n"
+        "Number_of_pockets: 1\n"
+        "Pocket_volume_A^3: 1.5\n"
+    )
 
 
 @pytest.fixture
 def sample_volpo_output():
-    """Sample .volpo file output from Zeo++."""
-    return """@ test.volpo Unitcell_volume: 307.484   Density: 1.62239 POAV_A^3: 131.284 POAV_Volume_fraction: 0.42696 POAV_cm^3/g: 0.263168
-PONAV_A^3: 0 PONAV_Volume_fraction: 0 PONAV_cm^3/g: 0"""
+    """Sample .volpo file output from Zeo++ (real single-line @-format)."""
+    return (
+        "@ test.volpo Unitcell_volume: 307.484   Density: 1.62239 "
+        "POAV_A^3: 131.284 POAV_Volume_fraction: 0.42696 POAV_cm^3/g: 0.263168 "
+        "PONAV_A^3: 0 PONAV_Volume_fraction: 0 PONAV_cm^3/g: 0\n"
+    )
 
 
 @pytest.fixture

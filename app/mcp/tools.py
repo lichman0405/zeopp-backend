@@ -285,13 +285,26 @@ async def _execute_analysis(
         await _progress(3)
 
         if not result.get("success"):
+            exit_code = result.get("exit_code")
+            stderr = result.get("stderr", "")
+            if exit_code == 124:
+                return _error(
+                    tool_name,
+                    f"Zeo++ execution timed out after {settings.zeo_command_timeout_seconds}s",
+                    code="ZEOPP_TIMEOUT",
+                    details={
+                        "exit_code": exit_code,
+                        "timeout_seconds": settings.zeo_command_timeout_seconds,
+                        "stderr": stderr,
+                    },
+                )
             return _error(
                 tool_name,
                 "Zeo++ execution failed",
                 code="ZEOPP_EXECUTION_FAILED",
                 details={
-                    "exit_code": result.get("exit_code"),
-                    "stderr": result.get("stderr", ""),
+                    "exit_code": exit_code,
+                    "stderr": stderr,
                 },
             )
 
@@ -808,13 +821,26 @@ async def tool_pore_size_dist_summary(
         await _progress(3)
 
         if not execution.get("success"):
+            exit_code = execution.get("exit_code")
+            stderr = execution.get("stderr", "")
+            if exit_code == 124:
+                return _error(
+                    "pore_size_dist_summary",
+                    f"Zeo++ execution timed out after {settings.zeo_command_timeout_seconds}s",
+                    code="ZEOPP_TIMEOUT",
+                    details={
+                        "exit_code": exit_code,
+                        "timeout_seconds": settings.zeo_command_timeout_seconds,
+                        "stderr": stderr,
+                    },
+                )
             return _error(
                 "pore_size_dist_summary",
                 "Zeo++ execution failed",
                 code="ZEOPP_EXECUTION_FAILED",
                 details={
-                    "exit_code": execution.get("exit_code"),
-                    "stderr": execution.get("stderr", ""),
+                    "exit_code": exit_code,
+                    "stderr": stderr,
                 },
             )
 

@@ -4,278 +4,478 @@
 # Date: 2025-05-13
 # Updated: 2025-12-22 - Enhanced error handling
 # Updated: 2025-12-31 - Refactored to eliminate code duplication
+# Updated: 2026-04-28 - Fixed line-split bug (NASA/NAV/PONAV all live on the
+#                       same single `@`-line as ASA/AV/POAV; previous code
+#                       wrongly searched them on the second
+#                       "Number_of_channels:" line). Switched to whole-text
+#                       token-pool lookup. Also enforced strict mode (silent
+#                       default returns removed) and added optional
+#                       channel/pocket extension fields for newer Zeo++
+#                       output.
 
 
 import re
-from typing import List
+from typing import Any, Dict, List, Optional
+
 from app.core.exceptions import ZeoppParsingError
 from app.utils.logger import logger
 
 
-def _extract_value(key: str, tokens: List[str], default: float = 0.0) -> float:
+# ── Helpers ─────────────────────────────────────────────────────────────────
+
+
+def _all_tokens(text: str) -> List[str]:
+    """Split the entire output into a single flat token list.
+
+    Zeo++ writes most metrics on a single ``@ ... key: value key: value ...``
+    line, but newer versions append additional lines such as
+    ``Number_of_channels:``, ``Channel_surface_area_A^2:`` etc. Splitting
+    by line and assuming a fixed line-to-key mapping is unreliable; using
+    a flat token pool lets us look up keys regardless of which physical
+    line they appear on, which is robust to both old and new Zeo++
+    versions.
     """
-    Extract a float value following a key from a list of tokens.
-    
+    return text.split()
+
+
+def _extract_value(
+    key: str,
+    tokens: List[str],
+    default: float = 0.0,
+    *,
+    required: bool = False,
+    output_file: Optional[str] = None,
+    raw_content: Optional[str] = None,
+) -> float:
+    """Extract a float value following ``key`` from a flat token list.
+
     Args:
-        key: The key to search for (e.g., "Unitcell_volume:")
-        tokens: List of string tokens to search in
-        default: Default value to return if extraction fails
-    
+        key: The exact key token to search for (e.g. ``"Unitcell_volume:"``).
+        tokens: Flat list of tokens to search in.
+        default: Returned when ``required`` is ``False`` and the key is
+            missing or its value is not a float.
+        required: When ``True``, raise :class:`ZeoppParsingError` on any
+            failure instead of silently returning ``default``. Used for
+            primary metrics whose absence indicates a real parsing
+            problem.
+        output_file: Optional output filename used in error messages.
+        raw_content: Optional raw output included in errors for diagnostics.
+
     Returns:
-        The extracted float value, or default if not found/invalid
+        The parsed ``float`` value, or ``default`` when the key/value is
+        missing and ``required`` is ``False``.
+
+    Raises:
+        ZeoppParsingError: Only when ``required=True`` and parsing fails.
     """
     try:
         idx = tokens.index(key)
-        return float(tokens[idx + 1])
-    except ValueError as e:
-        logger.warning(f"Failed to convert '{key}' value to float: {e}")
+    except ValueError:
+        if required:
+            raise ZeoppParsingError(
+                f"Required key '{key}' not found in output",
+                output_file=output_file,
+                raw_content=raw_content,
+            )
+        logger.warning(
+            f"Key '{key}' not found in output tokens, using default {default}"
+        )
         return default
-    except IndexError:
-        logger.warning(f"Key '{key}' not found in tokens or missing value after key")
+
+    if idx + 1 >= len(tokens):
+        if required:
+            raise ZeoppParsingError(
+                f"Required key '{key}' has no value after it in output",
+                output_file=output_file,
+                raw_content=raw_content,
+            )
+        logger.warning(
+            f"Key '{key}' has no value after it, using default {default}"
+        )
         return default
+
+    raw_value = tokens[idx + 1]
+    try:
+        return float(raw_value)
+    except ValueError:
+        if required:
+            raise ZeoppParsingError(
+                f"Value for key '{key}' is not a valid float: {raw_value!r}",
+                output_file=output_file,
+                raw_content=raw_content,
+            )
+        logger.warning(
+            f"Value for key '{key}' is not a valid float: {raw_value!r}, "
+            f"using default {default}"
+        )
+        return default
+
+
+def _collect_floats_after(prefix: str, text: str) -> List[float]:
+    """Collect all whitespace-separated float tokens immediately following
+    a labelled prefix such as ``"Channel_surface_area_A^2:"``.
+
+    Reading stops at the first non-float token (typically the next
+    labelled section). Returns an empty list when the prefix is absent
+    or no float follows it.
+    """
+    idx = text.find(prefix)
+    if idx == -1:
+        return []
+    tail = text[idx + len(prefix):]
+    out: List[float] = []
+    for tok in tail.split():
+        try:
+            out.append(float(tok))
+        except ValueError:
+            break
+    return out
+
+
+def _extract_int(prefix: str, text: str) -> Optional[int]:
+    """Extract the first integer following ``prefix`` in ``text``.
+
+    Returns ``None`` if the prefix is missing or the next token is not an
+    integer (these channel/pocket fields are optional in newer Zeo++
+    output).
+    """
+    idx = text.find(prefix)
+    if idx == -1:
+        return None
+    tail = text[idx + len(prefix):].split()
+    if not tail:
+        return None
+    try:
+        return int(tail[0])
+    except ValueError:
+        return None
+
+
+# ── Parsers ─────────────────────────────────────────────────────────────────
 
 
 def parse_vol_from_text(text: str) -> dict:
-    """
-    Parse content of Zeo++ .vol file from string for volume and density.
-    Expected format:
-    @ ... Unitcell_volume: <float> Density: <float>
-    AV_A^3: <float> AV_Volume_fraction: <float> AV_cm^3/g: <float>
-    NAV_A^3: <float> NAV_Volume_fraction: <float> NAV_cm^3/g: <float>
-    
+    """Parse Zeo++ ``-vol`` output (``.vol`` file) into a dict.
+
+    Real Zeo++ output (single ``@``-line, plus optional appended lines
+    in newer versions)::
+
+        @ EDI.vol Unitcell_volume: 307.484   Density: 1.62239
+        AV_A^3: 22.6493 AV_Volume_fraction: 0.07366 AV_cm^3/g: 0.0454022
+        NAV_A^3: 0 NAV_Volume_fraction: 0 NAV_cm^3/g: 0
+        Number_of_channels: 1 Channel_volume_A^3: 22.6493
+        Number_of_pockets: 0
+        Pocket_volume_A^3:
+
+    All metrics may also appear on a single physical line, so we search
+    the whole-text token pool rather than splitting by line.
+
     Returns:
-        dict with keys:
-        - unitcell_volume
-        - density
-        - av (dict with keys: unitcell, fraction, mass)
-        - nav (dict with keys: unitcell, fraction, mass)
-    
+        ``dict`` with keys ``unitcell_volume``, ``density``, ``av`` /
+        ``nav`` sub-dicts, plus optional channel/pocket extension fields
+        (``number_of_channels``, ``channel_volume_a3``,
+        ``number_of_pockets``, ``pocket_volume_a3``) which are ``None``
+        when not present in the output.
+
     Raises:
-        ZeoppParsingError: If the output format is invalid
+        ZeoppParsingError: When the ``@`` marker is missing or any of
+            the primary AV metrics cannot be parsed.
     """
-    lines = text.strip().splitlines()
-    if len(lines) < 2:
+    if "@" not in text:
         raise ZeoppParsingError(
-            "VOL output incomplete or malformed. Expected at least 2 lines.",
+            "VOL output missing '@' header",
             output_file="result.vol",
-            raw_content=text
+            raw_content=text,
         )
 
-    tokens1 = lines[0].split()
-    tokens2 = lines[1].split()
+    tokens = _all_tokens(text)
+    kw = {"output_file": "result.vol", "raw_content": text}
 
     return {
-        "unitcell_volume": _extract_value("Unitcell_volume:", tokens1),
-        "density": _extract_value("Density:", tokens1),
+        "unitcell_volume": _extract_value("Unitcell_volume:", tokens, required=True, **kw),
+        "density": _extract_value("Density:", tokens, required=True, **kw),
         "av": {
-            "unitcell": _extract_value("AV_A^3:", tokens1),
-            "fraction": _extract_value("AV_Volume_fraction:", tokens1),
-            "mass": _extract_value("AV_cm^3/g:", tokens1),
+            "unitcell": _extract_value("AV_A^3:", tokens, required=True, **kw),
+            "fraction": _extract_value("AV_Volume_fraction:", tokens, required=True, **kw),
+            "mass": _extract_value("AV_cm^3/g:", tokens, required=True, **kw),
         },
         "nav": {
-            "unitcell": _extract_value("NAV_A^3:", tokens2),
-            "fraction": _extract_value("NAV_Volume_fraction:", tokens2),
-            "mass": _extract_value("NAV_cm^3/g:", tokens2),
-        }
+            "unitcell": _extract_value("NAV_A^3:", tokens, required=True, **kw),
+            "fraction": _extract_value("NAV_Volume_fraction:", tokens, required=True, **kw),
+            "mass": _extract_value("NAV_cm^3/g:", tokens, required=True, **kw),
+        },
+        "number_of_channels": _extract_int("Number_of_channels:", text),
+        "channel_volume_a3": _collect_floats_after("Channel_volume_A^3:", text) or None,
+        "number_of_pockets": _extract_int("Number_of_pockets:", text),
+        "pocket_volume_a3": _collect_floats_after("Pocket_volume_A^3:", text) or None,
     }
 
 
 def parse_chan_from_text(text: str) -> dict:
-    """
-    Parse content of Zeo++ .chan file from string for channel dimensionality.
-    Expected format:
-    @ ... dimensionality: <int>
-    <int> included_diameter: <float> free_diameter: <float> included_along_free: <float>
-    <int> included_diameter: <float> free_diameter: <float> included_along_free: <float>
-    ...
+    """Parse Zeo++ ``-chan`` output (``.chan`` file) into a dict.
+
+    Real Zeo++ output (one ``Channel`` row per identified channel)::
+
+        EDI.chan   1 channels identified of dimensionality 1
+        Channel  0  4.89082  3.03868  4.89082
+
     Returns:
-        
-        dict with keys:
-        - dimension
-        - included_diameter
-        - free_diameter
-        - included_along_free
-    
+        ``dict`` with keys ``dimension``, ``included_diameter``,
+        ``free_diameter``, ``included_along_free`` (taken from the first
+        channel for backward compatibility), and ``channels`` which lists
+        every parsed channel.
+
     Raises:
-        ZeoppParsingError: If the output format is invalid
-        """
-    lines = text.strip().splitlines()
-    default_result = {
+        ZeoppParsingError: When the format is invalid. No silent default
+            results are returned (a real "no accessible channel" output
+            with ``dimensionality 0`` and zero channel rows is still a
+            valid result, not an error).
+    """
+    if not text or not text.strip():
+        raise ZeoppParsingError(
+            "CHAN output is empty",
+            output_file="result.chan",
+            raw_content=text,
+        )
+
+    lines = [ln for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        raise ZeoppParsingError(
+            "CHAN output has no non-empty lines",
+            output_file="result.chan",
+            raw_content=text,
+        )
+
+    # Robust dimensionality extraction (supports multi-digit values and
+    # arbitrary whitespace between the keyword and the integer).
+    dim_match = re.search(r"dimensionality\s+(\d+)", lines[0])
+    if dim_match is None:
+        raise ZeoppParsingError(
+            "Expected 'dimensionality <int>' phrase in first line of CHAN output",
+            output_file="result.chan",
+            raw_content=text,
+        )
+    dim = int(dim_match.group(1))
+
+    channel_re = re.compile(
+        r"^\s*Channel\s+(?P<id>\d+)\s+"
+        r"(?P<di>[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+        r"(?P<df>[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+"
+        r"(?P<dif>[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*$"
+    )
+    channels: List[Dict[str, float]] = []
+    for line in lines[1:]:
+        m = channel_re.match(line)
+        if not m:
+            continue
+        channels.append(
+            {
+                "id": int(m.group("id")),
+                "included_diameter": float(m.group("di")),
+                "free_diameter": float(m.group("df")),
+                "included_along_free": float(m.group("dif")),
+            }
+        )
+
+    if dim > 0 and not channels:
+        raise ZeoppParsingError(
+            f"CHAN output declares dimensionality {dim} but no Channel rows were parsed",
+            output_file="result.chan",
+            raw_content=text,
+        )
+
+    if channels:
+        first = channels[0]
+        return {
+            "dimension": dim,
+            "included_diameter": first["included_diameter"],
+            "free_diameter": first["free_diameter"],
+            "included_along_free": first["included_along_free"],
+            "channels": channels,
+        }
+
+    # dim == 0 with no Channel rows: no accessible channel — a real,
+    # valid result rather than a parsing failure.
+    return {
         "dimension": 0,
         "included_diameter": 0.0,
         "free_diameter": 0.0,
-        "included_along_free": 0.0
+        "included_along_free": 0.0,
+        "channels": [],
     }
-    
-    if not lines or len(lines) < 2:
-        logger.warning("CHAN output has fewer than 2 lines, returning default values")
-        return default_result
-
-    try:
-        dim_line = lines[0]
-        if "dimensionality" not in dim_line:
-            raise ZeoppParsingError(
-                "Expected 'dimensionality' keyword not found in first line",
-                output_file="result.chan",
-                raw_content=text
-            )
-        
-        # Extract dimensionality value
-        dim_part = dim_line.split("dimensionality")[1].strip()
-        dim = int(dim_part.split()[0] if ' ' in dim_part else dim_part[0])
-        
-        # Parse second line
-        tokens = lines[1].split()
-        if len(tokens) < 5:
-            raise ZeoppParsingError(
-                f"Expected at least 5 tokens in second line, got {len(tokens)}",
-                output_file="result.chan",
-                raw_content=text
-            )
-        
-        return {
-            "dimension": dim,
-            "included_diameter": float(tokens[2]),
-            "free_diameter": float(tokens[3]),
-            "included_along_free": float(tokens[4])
-        }
-    except (ValueError, IndexError) as e:
-        logger.warning(f"Failed to parse CHAN data: {e}. Returning default values.")
-        return default_result
 
 
 def parse_sa_from_text(text: str) -> dict:
-    """
-    Parse content of Zeo++ .sa file from string for surface area.
+    """Parse Zeo++ ``-sa`` output (``.sa`` file) into a dict.
 
-    Expected format:
-    @ ... ASA_A^2: <float> ASA_m^2/cm^3: <float> ASA_m^2/g: <float>
-    NASA_A^2: <float> NASA_m^2/cm^3: <float> NASA_m^2/g: <float>
+    Real Zeo++ output (single ``@``-line, plus optional appended lines
+    in newer versions)::
+
+        @ EDI.sa Unitcell_volume: 307.484 Density: 1.62239
+        ASA_A^2: 60.7713 ASA_m^2/cm^3: 1976.4 ASA_m^2/g: 1218.21
+        NASA_A^2: 0 NASA_m^2/cm^3: 0 NASA_m^2/g: 0
+        Number_of_channels: 1 Channel_surface_area_A^2: 60.7713
+        Number_of_pockets: 0
+        Pocket_surface_area_A^2:
 
     Returns:
-        dict with keys:
-        - asa_unitcell
-        - asa_volume
-        - asa_mass
-        - nasa_unitcell
-        - nasa_volume
-        - nasa_mass
-    
+        ``dict`` with primary ASA/NASA metrics plus optional
+        channel/pocket extension fields.
+
     Raises:
-        ZeoppParsingError: If the output format is invalid
+        ZeoppParsingError: When the ``@`` marker is missing or any of
+            the primary ASA/NASA metrics cannot be parsed.
     """
-    lines = text.strip().splitlines()
-    if len(lines) < 2:
+    if "@" not in text:
         raise ZeoppParsingError(
-            "SA output incomplete or malformed. Expected at least 2 lines.",
+            "SA output missing '@' header",
             output_file="result.sa",
-            raw_content=text
+            raw_content=text,
         )
 
-    tokens1 = lines[0].split()
-    tokens2 = lines[1].split()
+    tokens = _all_tokens(text)
+    kw = {"output_file": "result.sa", "raw_content": text}
 
     return {
-        "asa_unitcell": _extract_value("ASA_A^2:", tokens1),
-        "asa_volume": _extract_value("ASA_m^2/cm^3:", tokens1),
-        "asa_mass": _extract_value("ASA_m^2/g:", tokens1),
-        "nasa_unitcell": _extract_value("NASA_A^2:", tokens2),
-        "nasa_volume": _extract_value("NASA_m^2/cm^3:", tokens2),
-        "nasa_mass": _extract_value("NASA_m^2/g:", tokens2),
+        "asa_unitcell": _extract_value("ASA_A^2:", tokens, required=True, **kw),
+        "asa_volume": _extract_value("ASA_m^2/cm^3:", tokens, required=True, **kw),
+        "asa_mass": _extract_value("ASA_m^2/g:", tokens, required=True, **kw),
+        "nasa_unitcell": _extract_value("NASA_A^2:", tokens, required=True, **kw),
+        "nasa_volume": _extract_value("NASA_m^2/cm^3:", tokens, required=True, **kw),
+        "nasa_mass": _extract_value("NASA_m^2/g:", tokens, required=True, **kw),
+        "number_of_channels": _extract_int("Number_of_channels:", text),
+        "channel_surface_area_a2": _collect_floats_after("Channel_surface_area_A^2:", text) or None,
+        "number_of_pockets": _extract_int("Number_of_pockets:", text),
+        "pocket_surface_area_a2": _collect_floats_after("Pocket_surface_area_A^2:", text) or None,
     }
 
 
 def parse_volpo_from_text(text: str) -> dict:
-    """
-    Parse content of Zeo++ .volpo file string for probe occupiable volume.
+    """Parse Zeo++ ``-volpo`` output (``.volpo`` file) into a dict.
 
-    Format:
-    @ ... POAV_A^3: <float> POAV_Volume_fraction: <float> POAV_cm^3/g: <float>
-    PONAV_A^3: <float> PONAV_Volume_fraction: <float> PONAV_cm^3/g: <float>
-    
+    Real Zeo++ output::
+
+        @ EDI.volpo Unitcell_volume: 307.484 Density: 1.62239
+        POAV_A^3: 131.284 POAV_Volume_fraction: 0.42696 POAV_cm^3/g: 0.263168
+        PONAV_A^3: 0 PONAV_Volume_fraction: 0 PONAV_cm^3/g: 0
+
+    Newer versions may append per-channel/per-pocket volumes (using the
+    same ``Channel_volume_A^3:`` / ``Pocket_volume_A^3:`` labels as
+    ``-vol``); we expose them as optional extensions.
+
     Raises:
-        ZeoppParsingError: If the output format is invalid
+        ZeoppParsingError: When the ``@`` marker is missing or any of
+            the primary POAV/PONAV metrics cannot be parsed.
     """
-    lines = text.strip().splitlines()
-    if len(lines) < 2:
+    if "@" not in text:
         raise ZeoppParsingError(
-            "VOLPO output malformed. Expected at least 2 lines.",
+            "VOLPO output missing '@' header",
             output_file="result.volpo",
-            raw_content=text
+            raw_content=text,
         )
 
-    tokens1 = lines[0].split()
-    tokens2 = lines[1].split()
+    tokens = _all_tokens(text)
+    kw = {"output_file": "result.volpo", "raw_content": text}
 
     return {
-        "poav_unitcell": _extract_value("POAV_A^3:", tokens1),
-        "poav_fraction": _extract_value("POAV_Volume_fraction:", tokens1),
-        "poav_mass": _extract_value("POAV_cm^3/g:", tokens1),
-        "ponav_unitcell": _extract_value("PONAV_A^3:", tokens2),
-        "ponav_fraction": _extract_value("PONAV_Volume_fraction:", tokens2),
-        "ponav_mass": _extract_value("PONAV_cm^3/g:", tokens2),
+        "poav_unitcell": _extract_value("POAV_A^3:", tokens, required=True, **kw),
+        "poav_fraction": _extract_value("POAV_Volume_fraction:", tokens, required=True, **kw),
+        "poav_mass": _extract_value("POAV_cm^3/g:", tokens, required=True, **kw),
+        "ponav_unitcell": _extract_value("PONAV_A^3:", tokens, required=True, **kw),
+        "ponav_fraction": _extract_value("PONAV_Volume_fraction:", tokens, required=True, **kw),
+        "ponav_mass": _extract_value("PONAV_cm^3/g:", tokens, required=True, **kw),
+        "number_of_channels": _extract_int("Number_of_channels:", text),
+        "channel_volume_a3": _collect_floats_after("Channel_volume_A^3:", text) or None,
+        "number_of_pockets": _extract_int("Number_of_pockets:", text),
+        "pocket_volume_a3": _collect_floats_after("Pocket_volume_A^3:", text) or None,
     }
 
 
 def parse_res_from_text(text: str) -> dict:
-    """
-    Parse .res file text to extract pore diameters.
-    Expected format:
-    EDI.res    4.89082 3.03868  4.81969
-    
+    """Parse ``.res`` file text to extract pore diameters.
+
+    Expected format::
+
+        EDI.res    4.89082 3.03868  4.81969
+
     Raises:
-        ZeoppParsingError: If the output format is invalid
+        ZeoppParsingError: If the output format is invalid.
     """
     tokens = text.strip().split()
     if len(tokens) < 4:
         raise ZeoppParsingError(
             f"Malformed .res file output. Expected at least 4 tokens, got {len(tokens)}",
             output_file="result.res",
-            raw_content=text
+            raw_content=text,
         )
-    
+
     try:
         return {
             "included_diameter": float(tokens[1]),
             "free_diameter": float(tokens[2]),
-            "included_along_free": float(tokens[3])
+            "included_along_free": float(tokens[3]),
         }
     except (ValueError, IndexError) as e:
         raise ZeoppParsingError(
             f"Failed to parse .res file values: {e}",
             output_file="result.res",
-            raw_content=text
+            raw_content=text,
         )
 
 
 def parse_block_from_text(text: str) -> dict:
-    """
-    Parse .block output content from Zeo++ to extract summary info.
+    """Parse ``.block`` summary output from Zeo++.
 
-    Example lines:
-    Identified 0 channels and 2 pockets
-    139 nodes assigned to pores.
+    Example lines::
+
+        Identified 0 channels and 2 pockets
+        139 nodes assigned to pores.
+
+    Returns:
+        ``dict`` with integer ``channels`` / ``pockets`` /
+        ``nodes_assigned`` (zero-filled when only one of the two summary
+        lines is present) plus the raw ``raw`` text.
+
+    Raises:
+        ZeoppParsingError: When neither summary line can be recognized.
     """
-    result = {
-        "channels": 0,
-        "pockets": 0,
-        "nodes_assigned": 0,
-        "raw": text.strip()
+    raw = text.strip() if text else ""
+    result: Dict[str, Any] = {
+        "channels": None,
+        "pockets": None,
+        "nodes_assigned": None,
+        "raw": raw,
     }
 
-    for line in text.splitlines():
-        if "Identified" in line and "channels" in line and "pockets" in line:
-            try:
-                parts = line.split()
-                result["channels"] = int(parts[1])
-                result["pockets"] = int(parts[4])
-            except (ValueError, IndexError) as e:
-                logger.warning(f"Failed to parse channels/pockets from line: {e}")
-        elif "nodes assigned to pores" in line:
-            try:
-                result["nodes_assigned"] = int(line.split()[0])
-            except (ValueError, IndexError) as e:
-                logger.warning(f"Failed to parse nodes_assigned from line: {e}")
+    ident_match = re.search(
+        r"Identified\s+(\d+)\s+channels?\s+and\s+(\d+)\s+pockets?",
+        raw,
+    )
+    if ident_match is not None:
+        result["channels"] = int(ident_match.group(1))
+        result["pockets"] = int(ident_match.group(2))
+
+    nodes_match = re.search(r"(\d+)\s+nodes?\s+assigned\s+to\s+pores", raw)
+    if nodes_match is not None:
+        result["nodes_assigned"] = int(nodes_match.group(1))
+
+    if (
+        result["channels"] is None
+        and result["pockets"] is None
+        and result["nodes_assigned"] is None
+    ):
+        raise ZeoppParsingError(
+            "BLOCK output did not contain any recognizable summary line "
+            "('Identified N channels and M pockets' or 'N nodes assigned to pores')",
+            output_file="result.block",
+            raw_content=text,
+        )
+
+    # Backfill zeros for downstream consumers that expect ints when the
+    # output was partial (e.g. only "nodes assigned" line was emitted).
+    for key in ("channels", "pockets", "nodes_assigned"):
+        if result[key] is None:
+            result[key] = 0
 
     return result
 

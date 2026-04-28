@@ -69,10 +69,23 @@ class TestParseVolFromText:
         assert result["nav"]["mass"] == 0
 
     def test_parse_vol_incomplete_output(self):
-        """Test parsing when output has fewer than 2 lines."""
+        """Test parsing when the '@' header is missing entirely."""
         with pytest.raises(ZeoppParsingError) as exc_info:
-            parse_vol_from_text("@ test.vol Unitcell_volume: 307.484")
-        assert "Expected at least 2 lines" in str(exc_info.value)
+            parse_vol_from_text("Unitcell_volume: 307.484")
+        assert "missing '@' header" in str(exc_info.value)
+
+    def test_parse_vol_strict_missing_required(self):
+        """Strict mode: raises when a required AV/NAV field is missing."""
+        with pytest.raises(ZeoppParsingError):
+            parse_vol_from_text("@ test.vol Unitcell_volume: 307.484 Density: 1.62239")
+
+    def test_parse_vol_extension_fields(self, sample_vol_output_extended):
+        """Optional channel/pocket extension fields are populated when present."""
+        result = parse_vol_from_text(sample_vol_output_extended)
+        assert result["number_of_channels"] == 1
+        assert result["channel_volume_a3"] == [22.6493]
+        assert result["number_of_pockets"] == 1
+        assert result["pocket_volume_a3"] == [1.5]
 
     def test_parse_vol_empty_input(self):
         """Test parsing with empty input."""
@@ -95,10 +108,28 @@ class TestParseSaFromText:
         assert result["nasa_mass"] == 0
 
     def test_parse_sa_incomplete_output(self):
-        """Test parsing when output has fewer than 2 lines."""
+        """Test parsing when '@' header is missing."""
         with pytest.raises(ZeoppParsingError) as exc_info:
-            parse_sa_from_text("@ test.sa ASA_A^2: 60.7713")
-        assert "Expected at least 2 lines" in str(exc_info.value)
+            parse_sa_from_text("ASA_A^2: 60.7713")
+        assert "missing '@' header" in str(exc_info.value)
+
+    def test_parse_sa_strict_missing_nasa(self):
+        """Strict mode: raises when NASA_* required field is absent."""
+        text = (
+            "@ test.sa Unitcell_volume: 307.484 Density: 1.62239 "
+            "ASA_A^2: 60.7713 ASA_m^2/cm^3: 1976.4 ASA_m^2/g: 1218.21\n"
+        )
+        with pytest.raises(ZeoppParsingError):
+            parse_sa_from_text(text)
+
+    def test_parse_sa_extension_fields(self, sample_sa_output_extended):
+        """Optional channel/pocket extension fields are populated when present."""
+        result = parse_sa_from_text(sample_sa_output_extended)
+        assert result["nasa_unitcell"] == 12.34
+        assert result["number_of_channels"] == 1
+        assert result["channel_surface_area_a2"] == [60.7713]
+        assert result["number_of_pockets"] == 2
+        assert result["pocket_surface_area_a2"] == [7.5, 4.84]
 
 
 class TestParseVolpoFromText:
@@ -116,10 +147,10 @@ class TestParseVolpoFromText:
         assert result["ponav_mass"] == 0
 
     def test_parse_volpo_incomplete_output(self):
-        """Test parsing when output has fewer than 2 lines."""
+        """Test parsing when '@' header is missing."""
         with pytest.raises(ZeoppParsingError) as exc_info:
-            parse_volpo_from_text("@ test.volpo POAV_A^3: 131.284")
-        assert "Expected at least 2 lines" in str(exc_info.value)
+            parse_volpo_from_text("POAV_A^3: 131.284")
+        assert "missing '@' header" in str(exc_info.value)
 
 
 class TestParseResFromText:
@@ -159,24 +190,36 @@ class TestParseChanFromText:
         assert result["included_along_free"] == 4.89082
 
     def test_parse_chan_empty_input(self):
-        """Test parsing with empty input returns default values."""
-        result = parse_chan_from_text("")
-        
+        """Parsing empty input now raises rather than returning silent zeros."""
+        with pytest.raises(ZeoppParsingError):
+            parse_chan_from_text("")
+
+    def test_parse_chan_single_line_no_channels(self):
+        """dimensionality 0 with no Channel rows is a valid 'no channel' result."""
+        result = parse_chan_from_text(
+            "test.chan   0 channels identified of dimensionality 0"
+        )
         assert result["dimension"] == 0
         assert result["included_diameter"] == 0.0
-        assert result["free_diameter"] == 0.0
-        assert result["included_along_free"] == 0.0
+        assert result["channels"] == []
 
-    def test_parse_chan_single_line(self):
-        """Test parsing with only one line returns default values."""
-        result = parse_chan_from_text("test.chan   1 channels identified of dimensionality 1")
-        
-        assert result == {
-            "dimension": 0,
-            "included_diameter": 0.0,
-            "free_diameter": 0.0,
-            "included_along_free": 0.0
-        }
+    def test_parse_chan_dim_positive_no_rows_raises(self):
+        """dimensionality > 0 but no Channel rows is malformed -> raise."""
+        with pytest.raises(ZeoppParsingError):
+            parse_chan_from_text(
+                "test.chan   1 channels identified of dimensionality 1"
+            )
+
+    def test_parse_chan_multi_digit_dimension(self):
+        """Regression: multi-digit dimensionality must not be truncated."""
+        text = (
+            "test.chan  1 channels identified of dimensionality 10\n"
+            "Channel  0  4.89082  3.03868  4.89082\n"
+        )
+        result = parse_chan_from_text(text)
+        assert result["dimension"] == 10
+        assert len(result["channels"]) == 1
+        assert result["channels"][0]["id"] == 0
 
     def test_parse_chan_missing_dimensionality_keyword(self):
         """Test parsing when 'dimensionality' keyword is missing."""
@@ -200,13 +243,9 @@ class TestParseBlockFromText:
         assert "Identified 0 channels" in result["raw"]
 
     def test_parse_block_empty_input(self):
-        """Test parsing with empty input."""
-        result = parse_block_from_text("")
-        
-        assert result["channels"] == 0
-        assert result["pockets"] == 0
-        assert result["nodes_assigned"] == 0
-        assert result["raw"] == ""
+        """Empty BLOCK output is now treated as an unrecognized format."""
+        with pytest.raises(ZeoppParsingError):
+            parse_block_from_text("")
 
     def test_parse_block_partial_info(self):
         """Test parsing with only partial information."""

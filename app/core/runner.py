@@ -48,11 +48,18 @@ class ZeoRunner:
             result = sh_lib.Command(self.zeo_exec)(  # type: ignore[union-attr]
                 *zeo_args,
                 _cwd=str(cwd),
-                _err_to_out=True
+                _err_to_out=True,
+                _timeout=settings.zeo_command_timeout_seconds,
             )
             return True, 0, str(result), ""
         except sh_lib.CommandNotFound as exc:  # type: ignore[union-attr]
             return False, 127, "", str(exc)
+        except sh_lib.TimeoutException as exc:  # type: ignore[union-attr]
+            logger.error(
+                f"[runner] Zeo++ command timed out after "
+                f"{settings.zeo_command_timeout_seconds}s: {zeo_args}"
+            )
+            return False, 124, "", f"Zeo++ command timed out after {settings.zeo_command_timeout_seconds}s: {exc}"
         except sh_lib.ErrorReturnCode as exc:  # type: ignore[union-attr]
             return (
                 False,
@@ -70,11 +77,19 @@ class ZeoRunner:
                 cwd=str(cwd),
                 capture_output=True,
                 text=True,
-                check=False
+                check=False,
+                timeout=settings.zeo_command_timeout_seconds,
             )
             return completed.returncode == 0, completed.returncode, completed.stdout or "", completed.stderr or ""
         except FileNotFoundError:
             return False, 127, "", f"Executable not found: {self.zeo_exec}"
+        except subprocess.TimeoutExpired as exc:
+            logger.error(
+                f"[runner] Zeo++ command timed out after "
+                f"{settings.zeo_command_timeout_seconds}s: {zeo_args}"
+            )
+            stdout = _decode_stream(exc.stdout)
+            return False, 124, stdout, f"Zeo++ command timed out after {settings.zeo_command_timeout_seconds}s"
         except Exception as exc:
             return False, 1, "", str(exc)
 

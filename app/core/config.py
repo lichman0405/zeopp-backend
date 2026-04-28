@@ -78,6 +78,12 @@ class Settings(BaseSettings):
         default=4,
         description="Maximum concurrent Zeo++ tasks in thread pool"
     )
+    zeo_command_timeout_seconds: int = Field(
+        default=1800,
+        description="Timeout (in seconds) for a single Zeo++ subprocess invocation. "
+        "Operations such as `-chan` or `-oms` on large MOFs can be slow; on "
+        "timeout the runner returns success=False with exit_code=124."
+    )
 
     # MCP Configuration
     mcp_auth_token: str = Field(

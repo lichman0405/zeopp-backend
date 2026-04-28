@@ -24,7 +24,7 @@ class TestSettings:
     def test_settings_defaults(self):
         settings = Settings(_env_file=None)
         assert settings.app_name == "Zeo++ Backend API"
-        assert settings.version == "0.3.1"
+        assert settings.version == "0.3.2"
         assert settings.enable_cache is True
         assert settings.cors_origins_list == ["*"]
 
